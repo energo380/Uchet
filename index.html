@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Узлы учёта</title>
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 
@@ -22,9 +22,17 @@
     <span class="screw tl"></span><span class="screw tr"></span>
     <span class="screw bl"></span><span class="screw br"></span>
 
+    <!-- Шильдик. Название предприятия правится прямо здесь.
+         Логотип - файл logo.png в корне сайта, рядом с index.html.
+         Заменить логотип = заменить файл, код трогать не нужно. -->
     <div class="plate">
-      <div class="plate-title">Узлы учёта</div>
-      <div class="plate-sub">Метрологическая служба</div>
+      <div class="plate-inner">
+        <img class="logo" src="logo.png" alt="">
+        <div class="plate-text">
+          <div class="plate-title">Новосибирская<br>птицефабрика</div>
+          <div class="plate-sub">Узлы учёта · Метрологическая служба</div>
+        </div>
+      </div>
     </div>
 
     <div class="panel-mid">
@@ -43,16 +51,16 @@
         <span class="seal-cap"></span>
         <span class="seal-text">LEAD<br>SEAL</span>
       </div>
+
+      <button class="dev-btn" onclick="login()">
+        ВОЙТИ<span class="gost">ГОСТ</span>
+      </button>
     </div>
 
     <div class="panel-marks">
-      <span id="sn">S/N 0425-МС · сб. 3</span>
+      <span id="sn">S/N 0425-МС · сб. 5</span>
       <span>Кл. точности 0,5</span>
     </div>
-
-    <button class="dev-btn" onclick="login()">ВОЙТИ</button>
-
-    <div class="gost">ГОСТ</div>
   </div>
 
   <div class="err login-err" id="loginErr"></div>
