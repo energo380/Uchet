@@ -22,8 +22,9 @@
   --text-muted:  #5c6672;
   --text-faint:  #8b939e;
 
-  --accent:      #1f6feb;
-  --accent-bg:   #e8f0fe;
+  --accent:      #bc2322;   /* фирменный красный, снят с логотипа */
+  --accent-bg:   #fbeceb;
+  --brass:       #c9a558;
 
   --danger:      #c0392b;
   --danger-bg:   #fdecea;
@@ -37,6 +38,10 @@
   --shadow:      0 8px 30px rgba(15, 20, 30, .12);
   --font:        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                  "Helvetica Neue", Arial, sans-serif;
+  /* даты и заводские номера набираются так же, как их показывает
+     сам прибор: моноширинно, цифра под цифрой. Столбцы дат
+     в списке от этого читаются заметно легче */
+  --mono:        "Consolas", "DejaVu Sans Mono", "Courier New", monospace;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -51,8 +56,9 @@
     --text-muted:  #a3acb8;
     --text-faint:  #7b848f;
 
-    --accent:      #6ea8fe;
-    --accent-bg:   #1b2b45;
+    --accent:      #e2635f;
+    --accent-bg:   #3a1d1c;
+    --brass:       #b8964c;
 
     --danger:      #f08a80;
     --danger-bg:   #3a1f1c;
@@ -563,4 +569,53 @@ legend {
   .lcd-input { font-size: 20px; }
   .seal { display: none; }
   .dev-btn { width: 100%; }
+}
+
+
+/* ============================================================
+   ФИРМЕННЫЕ ПРИМЕТЫ ВНУТРИ САЙТА
+   ------------------------------------------------------------
+   Внутри работают, а не любуются, поэтому фактуры прибора здесь
+   нет: ни металла, ни тиснения, ни стекла. Взяты только приметы -
+   латунный шильдик с эмблемой в шапке, фирменный красный вместо
+   синего, лампы вместо цветных плашек и индикаторный шрифт
+   для дат и заводских номеров.
+   ============================================================ */
+
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+/* Полный логотип предприятия. Панель входа живёт по своим
+   правилам, там латунный шильдик с одной эмблемой, а внутри
+   сайта стоит обычный логотип: рабочие экраны не место
+   для фактуры. */
+.brand-logo { height: 44px; width: auto; display: block; flex: none; }
+
+@media (prefers-color-scheme: dark) {
+  /* тёмно-красная надпись на тёмном фоне читается плохо,
+     поэтому логотип кладётся на светлую подложку */
+  .brand-logo {
+    background: #fff; border-radius: 8px; padding: 5px 8px;
+    box-sizing: content-box;
+  }
+}
+
+/* даты, заводские номера, номера свидетельств */
+.mono { font-family: var(--mono); font-size: .94em; }
+
+/* лампа состояния: тот же язык, что на панели входа */
+.chip { display: inline-flex; align-items: center; gap: 8px; }
+.chip .dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--line-strong); flex: none;
+}
+.chip.danger .dot { background: #f2544a; box-shadow: 0 0 7px rgba(242,84,74,.85); }
+.chip.warn .dot   { background: #f0b429; box-shadow: 0 0 7px rgba(240,180,41,.85); }
+.chip.zero .dot   { background: var(--line-strong); box-shadow: none; }
+
+/* строка узла: срок справа набирается индикаторным шрифтом */
+.row-side .mono { font-size: 13px; }
+
+@media (max-width: 620px) {
+  .brand-logo { height: 30px; }
+  .brand { gap: 10px; }
 }
