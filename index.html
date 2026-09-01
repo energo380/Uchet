@@ -85,7 +85,6 @@
         <div class="section-head">
           <h3 class="grow">Документы</h3>
           <button class="btn btn-small" onclick="syncFolder()">Подхватить из папки</button>
-          <a class="btn btn-small" id="folderLink" target="_blank" rel="noopener" style="display:none">Папка на Диске</a>
         </div>
         <div id="files"></div>
 
@@ -187,6 +186,29 @@
       <div class="spacer"></div>
       <button class="btn" id="askNo">Отмена</button>
       <button class="btn btn-main" id="askYes">Да</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== ОЧЕРЕДЬ ОТПРАВКИ ====================== -->
+<button class="qbtn" id="qbtn" onclick="openQueue()">
+  <span class="dot"></span><span id="qtext">Очередь</span>
+</button>
+
+<div class="overlay" id="queueModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="grow">
+        <h2>Очередь отправки</h2>
+        <div class="small muted">Записи хранятся в этом браузере, пока сервер их не примет</div>
+      </div>
+      <button class="x" onclick="close_('queueModal')" aria-label="Закрыть">&times;</button>
+    </div>
+    <div class="modal-body" id="queueBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-main" onclick="queueRetry()">Отправить сейчас</button>
+      <div class="spacer"></div>
+      <button class="btn" onclick="close_('queueModal')">Закрыть</button>
     </div>
   </div>
 </div>
@@ -337,6 +359,11 @@ function plural(n, one, few, many) {
  * не делает предварительный запрос OPTIONS, на который Apps Script
  * отвечать не умеет. Если POST в этом браузере блокируется
  * (антивирус, прокси), один раз за сеанс переключаемся на JSONP.
+ *
+ * Отказ связи и отказ сервера различаются признаком net. Очередь
+ * относится к ним по-разному: при обрыве связи запись остаётся
+ * и уходит позже, при отказе сервера («Не указано наименование»)
+ * повтор ничего не изменит, и запись надо показать человеку.
  */
 let usePost = true;
 
@@ -352,6 +379,8 @@ async function call(params) {
       }
     }
     return await jsonp(p);
+  } catch (e) {
+    return { success: false, net: true, error: 'Нет связи с сервером' };
   } finally {
     bar(false);
   }
@@ -388,10 +417,10 @@ function jsonp(p) {
 
     window[cb] = function (data) { if (!done) { done = true; resolve(data); cleanup(); } };
     timer = setTimeout(function () {
-      if (!done) { done = true; resolve({ success: false, error: 'Нет ответа от сервера' }); cleanup(); }
+      if (!done) { done = true; resolve({ success: false, net: true, error: 'Нет ответа от сервера' }); cleanup(); }
     }, 40000);
     tag.onerror = function () {
-      if (!done) { done = true; resolve({ success: false, error: 'Нет связи с сервером' }); cleanup(); }
+      if (!done) { done = true; resolve({ success: false, net: true, error: 'Нет связи с сервером' }); cleanup(); }
     };
 
     tag.src = url.toString();
@@ -761,10 +790,6 @@ async function openNode(id) {
   renderDevices();
   renderFiles();
 
-  const link = $('folderLink');
-  link.style.display = S.folderUrl ? '' : 'none';
-  link.href = S.folderUrl || '#';
-
   const cancelled = (r.node['Статус'] === 'Аннулировано');
   $('nodeFoot').innerHTML =
     (cancelled ? '' : '<button class="btn btn-main" onclick="saveNode()">Сохранить</button>') +
@@ -779,26 +804,20 @@ async function openNode(id) {
 
 function closeNode() { close_('nodeModal'); }
 
-async function saveNode() {
+function saveNode() {
   const card = collect(NODE_FORM, 'f_');
   const isNew = !S.node;
 
-  const r = await call(isNew
-    ? { action: 'saveNode', node: card, clientId: 'w' + Date.now() + Math.floor(Math.random() * 1e4) }
-    : { action: 'updateNode', id: S.node['id'], node: card });
+  const label = isNew
+    ? 'Новый узел: ' + (card['Обозначение'] || card['Наименование'] || 'без названия')
+    : 'Узел № ' + S.node['Номер'];
 
-  if (!r.success) {
-    $('nodeErr').textContent = r.error;
-    $('nodeErr').style.display = '';
-    return;
-  }
+  if (isNew) enqueue('saveNode', { node: card }, label);
+  else enqueue('updateNode', { id: S.node['id'], node: card }, label);
 
   $('nodeErr').style.display = 'none';
-  toast(isNew ? 'Узел создан, номер ' + r.number : (r.unchanged ? 'Изменений нет' : 'Сохранено'));
-
-  await loadList(false);
-  await loadDue();
-  if (isNew) openNode(r.id); else openNode(S.node['id']);
+  closeNode();
+  toast('Поставлено в очередь');
 }
 
 async function cancelNode() {
@@ -975,9 +994,10 @@ async function saveDevice() {
   const isNew = !S.editingDevice;
   const device = collect(deviceForm(isNew), 'd_');
 
+  const action = isNew ? 'saveDevice' : 'updateDevice';
   const params = isNew
-    ? { action: 'saveDevice', nodeId: S.node['id'], device: device }
-    : { action: 'updateDevice', id: S.editingDevice['id'], device: device };
+    ? { nodeId: S.node['id'], device: device }
+    : { id: S.editingDevice['id'], device: device };
 
   if (isNew) {
     const check = collect(FIRST_CHECK_FORM, 'c_');
@@ -988,21 +1008,14 @@ async function saveDevice() {
     }
   }
 
-  const r = await call(params);
-  if (!r.success) {
-    $('deviceErr').textContent = r.error;
-    $('deviceErr').style.display = '';
-    return;
-  }
+  const label = (isNew ? 'Прибор: ' : 'Правка прибора: ') +
+    [device['Позиция'], device['Марка'], device['Заводской номер']].filter(Boolean).join(' ');
+
+  params.nodeId = S.node['id'];
+  enqueue(action, params, label);
 
   close_('deviceModal');
-  toast(isNew ? (r.newBrand ? 'Прибор добавлен, марка занесена в справочник' : 'Прибор добавлен')
-              : 'Сохранено');
-
-  if (r.newBrand) refreshModels();
-  await openNode(S.node['id']);
-  loadList(false);
-  loadDue();
+  toast('Поставлено в очередь');
 }
 
 async function deleteDevice(id) {
@@ -1063,21 +1076,16 @@ function openCheck(deviceId) {
   open_('checkModal');
 }
 
-async function saveCheck() {
+function saveCheck() {
   const check = collect(CHECK_FORM, 'k_');
-  const r = await call({ action: 'saveCheck', deviceId: S.checkDevice['id'], check: check });
+  const d = S.checkDevice;
 
-  if (!r.success) {
-    $('checkErr').textContent = r.error;
-    $('checkErr').style.display = '';
-    return;
-  }
+  enqueue('saveCheck',
+    { deviceId: d['id'], nodeId: S.node['id'], check: check },
+    'Поверка: ' + [d['Позиция'], d['Марка'], check['Дата поверки']].filter(Boolean).join(' '));
 
   close_('checkModal');
-  toast('Поверка внесена' + (r.next ? ', следующая до ' + r.next : ''));
-  await openNode(S.node['id']);
-  loadList(false);
-  loadDue();
+  toast('Поставлено в очередь');
 }
 
 async function deleteCheck(id) {
@@ -1216,10 +1224,7 @@ async function syncFolder() {
   const fresh = await call({ action: 'node', id: S.node['id'] });
   if (fresh.success) {
     S.files = fresh.files;
-    S.folderUrl = fresh.folderUrl;
     renderFiles();
-    $('folderLink').style.display = S.folderUrl ? '' : 'none';
-    $('folderLink').href = S.folderUrl || '#';
   }
 }
 
@@ -1376,6 +1381,162 @@ function applyDictToFilters() {
 }
 
 
+/* ============================================================
+   ОЧЕРЕДЬ ОТПРАВКИ
+   ------------------------------------------------------------
+   Запись сначала ложится в память браузера и только потом уходит
+   на сервер. Смысл не только в работе без связи: ответ может
+   потеряться и при хорошей связи, а заполненная карточка не должна
+   пропадать вместе с ним.
+
+   Обрыв связи и отказ сервера разведены. Обрыв - данные в порядке,
+   виновата сеть: запись остаётся, повтор через 20 секунд, минуту,
+   две с половиной. Отказ сервера («Не указано наименование») -
+   со второй попытки будет то же самое: запись убирается из очереди,
+   ошибка показывается человеку.
+
+   От дублей защищает clientId: он же служит идентификатором записи
+   в очереди и уходит на сервер. Сервер, встретив знакомый clientId,
+   возвращает уже заведённую строку вместо второй.
+
+   Вложения через очередь не идут: файл на несколько мегабайт
+   в память браузера не положишь, да и смысла нет - его всё равно
+   не отправить без связи.
+   ============================================================ */
+
+const Q_KEY = 'queue';
+const Q_DELAYS = [20000, 60000, 150000];
+let queue = [];
+let qTimer = null;
+
+function queueLoad() {
+  try { queue = JSON.parse(localStorage.getItem(Q_KEY) || '[]'); }
+  catch (e) { queue = []; }
+
+  // Застрявшие на отправке возвращаем в очередь: повтор безопасен
+  queue.forEach(function (i) { if (i.state === 'sending') i.state = 'pending'; });
+  queueSave();
+}
+
+function queueSave() {
+  try { localStorage.setItem(Q_KEY, JSON.stringify(queue)); } catch (e) {}
+  renderQueueBtn();
+  if ($('queueModal').classList.contains('open')) renderQueue();
+}
+
+function enqueue(action, params, label) {
+  const item = {
+    id: 'q' + Date.now() + Math.floor(Math.random() * 10000),
+    action: action,
+    params: params,
+    label: label,
+    state: 'pending',
+    tries: 0,
+    error: '',
+    when: new Date().toLocaleString('ru-RU'),
+    nodeId: params.nodeId || params.id || ''
+  };
+  item.params.clientId = item.id;
+  queue.push(item);
+  queueSave();
+  queueProcess();
+  return item;
+}
+
+async function queueProcess() {
+  const item = queue.filter(function (i) { return i.state === 'pending'; })[0];
+  if (!item) return;
+
+  item.state = 'sending';
+  queueSave();
+
+  const r = await call(Object.assign({ action: item.action }, item.params));
+
+  if (r && r.success) {
+    queue = queue.filter(function (i) { return i.id !== item.id; });
+    queueSave();
+    toast(item.label + ': сохранено' + (r.number ? ', номер ' + r.number : ''));
+    await afterSend(item, r);
+    queueProcess();
+    return;
+  }
+
+  if (r && r.net) {
+    item.state = 'error';
+    item.tries++;
+    item.error = 'нет связи';
+    queueSave();
+
+    const delay = Q_DELAYS[Math.min(item.tries - 1, Q_DELAYS.length - 1)];
+    clearTimeout(qTimer);
+    qTimer = setTimeout(queueRetry, delay);
+    toast('Нет связи. Запись в очереди, повтор через ' +
+          Math.round(delay / 1000) + ' с', true);
+    return;
+  }
+
+  queue = queue.filter(function (i) { return i.id !== item.id; });
+  queueSave();
+  toast(item.label + ': ' + ((r && r.error) || 'сервер отклонил запись'), true);
+  queueProcess();
+}
+
+function queueRetry() {
+  queue.forEach(function (i) { if (i.state === 'error') i.state = 'pending'; });
+  queueSave();
+  queueProcess();
+}
+
+/** Что обновить на экране после того, как запись ушла. */
+async function afterSend(item, r) {
+  await loadList(false);
+  loadDue();
+
+  if (item.action === 'saveNode' && r.id) { openNode(r.id); return; }
+
+  const openId = S.node ? S.node['id'] : '';
+  if (openId && (item.nodeId === openId || item.params.id === openId)) {
+    openNode(openId);
+  }
+}
+
+function renderQueueBtn() {
+  const btn = $('qbtn');
+  btn.classList.toggle('on', queue.length > 0);
+  btn.classList.toggle('bad', queue.some(function (i) { return i.state === 'error'; }));
+  $('qtext').textContent = 'Очередь · ' + queue.length;
+}
+
+function openQueue() { renderQueue(); open_('queueModal'); }
+
+function renderQueue() {
+  $('queueBody').innerHTML = queue.length
+    ? queue.map(function (i) {
+        const state = i.state === 'sending' ? 'отправляется'
+                    : i.state === 'error' ? 'нет связи, попыток: ' + i.tries
+                    : 'ждёт отправки';
+        return '<div class="q-row">' +
+          '<div class="grow"><div>' + esc(i.label) + '</div>' +
+          '<div class="meta">' + esc(i.when) + ' · ' + esc(state) + '</div></div>' +
+          '<button class="btn btn-small btn-danger" onclick="queueDrop(\'' + i.id + '\')">Убрать</button>' +
+        '</div>';
+      }).join('')
+    : '<div class="empty">Очередь пуста, всё отправлено</div>';
+}
+
+async function queueDrop(id) {
+  const yes = await ask({
+    title: 'Убрать из очереди',
+    text: 'Запись не попадёт в базу, восстановить её будет нечем.',
+    yes: 'Убрать'
+  });
+  if (!yes) return;
+
+  queue = queue.filter(function (i) { return i.id !== id; });
+  queueSave();
+}
+
+
 /* ---------------- печать ---------------- */
 
 function printArea(html) {
@@ -1408,11 +1569,12 @@ function printRegistry() {
 (function start() {
   const saved = sessionStorage.getItem('auth');
   $('login').classList.add('on');
+  queueLoad();
 
   if (saved) {
     S.pass = saved;
     call({ action: 'init' }).then(function (r) {
-      if (r && r.success) applyInit(r);
+      if (r && r.success) { applyInit(r); queueProcess(); }
       else sessionStorage.removeItem('auth');
     });
   }
@@ -1421,9 +1583,20 @@ function printRegistry() {
     if (e.key === 'Enter') login();
   });
 
+  // Связь вернулась - досылаем всё, что ждало
+  window.addEventListener('online', queueRetry);
+
+  // Закрывать вкладку с неотправленными записями браузер
+  // разрешит только после подтверждения
+  window.addEventListener('beforeunload', function (e) {
+    if (!queue.length) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
-    ['askModal', 'checkModal', 'deviceModal', 'dueModal', 'dictModal', 'nodeModal']
+    ['askModal', 'checkModal', 'deviceModal', 'dueModal', 'dictModal', 'queueModal', 'nodeModal']
       .some(function (id) {
         if ($(id).classList.contains('open')) { close_(id); return true; }
         return false;
