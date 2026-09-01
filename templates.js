@@ -60,6 +60,7 @@ function docCss(orientation) {
     '.doc h1 { font-size: 14pt; text-align: center; margin: 0 0 2mm; text-transform: uppercase; }' +
     '.doc h2 { font-size: 11pt; margin: 6mm 0 2mm; text-transform: uppercase; letter-spacing: .04em; }' +
     '.doc .org { text-align: center; font-size: 10pt; margin-bottom: 4mm; }' +
+    '.doc .logo { display: block; height: 14mm; margin: 0 auto 2mm; }' +
     '.doc .sub { text-align: center; font-size: 11pt; margin: 0 0 5mm; }' +
     '.doc table { width: 100%; border-collapse: collapse; margin-bottom: 3mm; }' +
     '.doc th, .doc td { border: 0.4pt solid #000; padding: 1.2mm 1.8mm; vertical-align: top; font-size: 9.5pt; }' +
@@ -237,6 +238,7 @@ function renderNodeDoc(node, devices, files, org, opts) {
 
   return docCss('portrait') +
     '<div class="doc">' +
+      '<img class="logo" src="logo2.png" alt="">' +
       '<div class="org">' + tplEsc(org || '') + '</div>' +
       '<h1>Карточка узла учёта № ' + tplEsc(node['Номер']) + '</h1>' +
       '<div class="sub">' + tplEsc(title) + '</div>' +
@@ -303,6 +305,7 @@ function renderRegistryDoc(nodes, org, filters, opts) {
 
   return docCss('landscape') +
     '<div class="doc">' +
+      '<img class="logo" src="logo2.png" alt="">' +
       '<div class="org">' + tplEsc(org || '') + '</div>' +
       '<h1>Реестр узлов учёта</h1>' +
       '<div class="sub">' +
