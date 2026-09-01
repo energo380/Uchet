@@ -19,4 +19,4 @@
    этот файл не нужно.
    ============================================================ */
 
-const API_URL = 'СЮДА_ВСТАВИТЬ_АДРЕС_ОКАНЧИВАЮЩИЙСЯ_НА_EXEC';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzjrUVQHp0uh9jZPc6kJ5yX1yvgaipxg-VWMgxdFBWMYQiyHe7slH5XonWYTdPuKejF/exec';
