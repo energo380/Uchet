@@ -4,22 +4,58 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Узлы учёта</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 
 <div class="bar" id="bar"></div>
 <div class="toast" id="toast"></div>
 
-<!-- ============================ ВХОД ============================ -->
+<!-- ============================ ВХОД ============================
+     Панель прибора вместо обычной формы. Смысл не только
+     в оформлении: посторонний, попавший на адрес, видит нечто
+     похожее на страницу производителя оборудования, а не окно
+     входа в базу предприятия.
+     ============================================================ -->
 <section class="login" id="login">
-  <div class="login-box">
-    <h1>Узлы учёта</h1>
-    <p class="muted small">Метрологическая служба</p>
-    <input type="password" id="pass" placeholder="Пароль" autocomplete="current-password">
-    <button class="btn btn-main btn-wide" onclick="login()">Войти</button>
-    <div class="err" id="loginErr"></div>
+  <div class="panel">
+    <span class="screw tl"></span><span class="screw tr"></span>
+    <span class="screw bl"></span><span class="screw br"></span>
+
+    <div class="plate">
+      <div class="plate-title">Узлы учёта</div>
+      <div class="plate-sub">Метрологическая служба</div>
+    </div>
+
+    <div class="panel-mid">
+      <div class="leds">
+        <span class="led green" id="ledOk"></span>
+        <span class="led amber" id="ledWait"></span>
+        <span class="led red" id="ledErr"></span>
+      </div>
+
+      <div class="lcd">
+        <input type="password" id="pass" class="lcd-input"
+               placeholder="Пароль" autocomplete="current-password">
+      </div>
+
+      <div class="seal" title="Пломба">
+        <span class="seal-cap"></span>
+        <span class="seal-text">LEAD<br>SEAL</span>
+      </div>
+    </div>
+
+    <div class="panel-marks">
+      <span id="sn">S/N 0425-МС · сб. 3</span>
+      <span>Кл. точности 0,5</span>
+    </div>
+
+    <button class="dev-btn" onclick="login()">ВОЙТИ</button>
+
+    <div class="gost">ГОСТ</div>
   </div>
+
+  <div class="err login-err" id="loginErr"></div>
 </section>
 
 <!-- ========================= ПРИЛОЖЕНИЕ ========================= -->
@@ -85,6 +121,7 @@
         <div class="section-head">
           <h3 class="grow">Документы</h3>
           <button class="btn btn-small" onclick="syncFolder()">Подхватить из папки</button>
+          <button class="btn btn-small" id="folderBtn" style="display:none" onclick="openFolder()">Папка на Диске</button>
         </div>
         <div id="files"></div>
 
@@ -216,7 +253,7 @@
 <div id="printArea"></div>
 
 <script src="config.js"></script>
-<script src="templates.js"></script>
+<script src="templates.js?v=3"></script>
 <script>
 /* ============================================================
    БАЗА УЗЛОВ УЧЁТА МЕТРОЛОГИЧЕСКОЙ СЛУЖБЫ
@@ -434,20 +471,34 @@ function jsonp(p) {
 async function login() {
   const pass = $('pass').value.trim();
   if (!pass) return;
-  if (!API) { $('loginErr').textContent = 'Не задан адрес сервера в config.js'; return; }
+  if (!API) { loginFail('Не задан адрес сервера в config.js'); return; }
 
   S.pass = pass;
   $('loginErr').textContent = '';
+  led('wait');
 
   const r = await call({ action: 'init' });
   if (!r || !r.success) {
     S.pass = '';
-    $('loginErr').textContent = (r && r.error) || 'Не удалось войти';
+    loginFail((r && r.error) || 'Не удалось войти');
     return;
   }
 
+  led('ok');
   sessionStorage.setItem('auth', pass);
   applyInit(r);
+}
+
+function loginFail(text) {
+  $('loginErr').textContent = text;
+  led('err');
+}
+
+/** Лампы на панели: ожидание, отказ, готово. */
+function led(state) {
+  $('ledWait').classList.toggle('on', state === 'wait');
+  $('ledErr').classList.toggle('on', state === 'err');
+  $('ledOk').classList.toggle('on', state === 'ok');
 }
 
 function applyInit(r) {
@@ -789,6 +840,7 @@ async function openNode(id) {
 
   renderDevices();
   renderFiles();
+  $('folderBtn').style.display = isAdmin() ? '' : 'none';
 
   const cancelled = (r.node['Статус'] === 'Аннулировано');
   $('nodeFoot').innerHTML =
@@ -1209,6 +1261,29 @@ async function uploadFiles() {
   if (fresh.success) { S.files = fresh.files; renderFiles(); }
 }
 
+/**
+ * Папка узла на Диске. Открывается только у администратора:
+ * туда кладут крупные проекты, которые не проходят через сайт.
+ *
+ * Пустое окно открывается ДО запроса на сервер: если открыть его
+ * после ожидания, браузер посчитает это всплывающим окном
+ * и заблокирует.
+ */
+async function openFolder() {
+  const w = window.open('', '_blank');
+  const r = await call({ action: 'nodeFolder', nodeId: S.node['id'] });
+
+  if (!r.success) {
+    if (w) w.close();
+    toast(r.error, true);
+    return;
+  }
+
+  if (w) w.location = r.url;
+  else toast('Разрешите всплывающие окна, чтобы открыть папку', true);
+}
+
+
 async function syncFolder() {
   const r = await call({ action: 'syncFolder', nodeId: S.node['id'] });
   if (!r.success) { toast(r.error, true); return; }
@@ -1550,7 +1625,7 @@ function printNode() {
     toast('Печатные формы не подключены: нет файла templates.js', true);
     return;
   }
-  printArea(renderNodeDoc(S.node, S.devices, S.files, S.init.org));
+  printArea(renderNodeDoc(S.node, S.devices, S.files, S.init.org, { user: S.user }));
 }
 
 function printRegistry() {
@@ -1559,8 +1634,11 @@ function printRegistry() {
     return;
   }
   printArea(renderRegistryDoc(S.nodes, S.init.org, {
-    object: $('fObject').value, resource: $('fResource').value, status: $('fStatus').value
-  }));
+    object: $('fObject').value,
+    resource: $('fResource').value,
+    status: $('fStatus').value,
+    q: $('q').value.trim()
+  }, { user: S.user, warnDays: S.init.warnDays }));
 }
 
 
