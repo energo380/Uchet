@@ -404,3 +404,142 @@ legend {
 .q-row:last-child { border-bottom: none; }
 .q-row .grow { flex: 1; min-width: 0; }
 .q-row .meta { font-size: 12px; color: var(--text-faint); }
+
+/* ============================================================
+   ЭКРАН ВХОДА: ЛИЦЕВАЯ ПАНЕЛЬ ПРИБОРА
+   ------------------------------------------------------------
+   Цвета здесь заданы напрямую, а не переменными: это корпус
+   прибора, он выглядит одинаково в светлой и тёмной теме.
+   ============================================================ */
+
+.panel {
+  position: relative;
+  width: 100%; max-width: 420px;
+  padding: 22px 26px 26px;
+  border-radius: 16px;
+  background:
+    linear-gradient(160deg, #8f949c 0%, #6f757e 18%, #565c66 55%, #6b717a 100%);
+  border: 1px solid #4a4f58;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -2px 6px rgba(0,0,0,.45),
+    0 18px 40px rgba(10,14,20,.35);
+}
+
+.screw {
+  position: absolute; width: 15px; height: 15px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d7dade, #8d939b 60%, #5a5f67);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.6), 0 1px 2px rgba(0,0,0,.5);
+}
+.screw::after {
+  content: ''; position: absolute; inset: 5px 2px;
+  border-top: 1.5px solid rgba(40,44,50,.75);
+  transform: rotate(35deg);
+}
+.screw.tl { top: 10px; left: 10px; }
+.screw.tr { top: 10px; right: 10px; }
+.screw.bl { bottom: 10px; left: 10px; }
+.screw.br { bottom: 10px; right: 10px; }
+
+/* латунный шильдик */
+.plate {
+  margin: 4px auto 18px; max-width: 300px;
+  padding: 10px 16px; text-align: center;
+  border-radius: 4px;
+  background: linear-gradient(170deg, #dcc084, #bb974d 45%, #d0b072 100%);
+  border: 1px solid #8d6f32;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 2px 4px rgba(0,0,0,.35);
+}
+.plate-title {
+  font-size: 26px; font-weight: 700; color: #3a2c0c; letter-spacing: .01em;
+  text-shadow: 0 1px 0 rgba(255,255,255,.4);
+}
+.plate-sub { font-size: 13px; color: #4d3c14; margin-top: 2px; }
+
+.panel-mid { display: flex; align-items: center; gap: 12px; }
+
+/* лампы */
+.leds { display: flex; flex-direction: column; gap: 9px; }
+.led {
+  width: 11px; height: 11px; border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.45);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.35);
+}
+.led.green { background: #2f5f3a; }
+.led.amber { background: #6b5220; }
+.led.red   { background: #5f2a26; }
+.led.green.on { background: #46d16b; box-shadow: 0 0 9px #46d16b; }
+.led.amber.on { background: #f0b429; box-shadow: 0 0 9px #f0b429; }
+.led.red.on   { background: #f2544a; box-shadow: 0 0 9px #f2544a; }
+
+/* жидкокристаллический индикатор */
+.lcd {
+  flex: 1;
+  padding: 14px 16px; border-radius: 8px;
+  background: linear-gradient(180deg, #cfe3c0, #b9d7a6);
+  border: 3px solid #3f444c;
+  box-shadow: inset 0 3px 10px rgba(60,80,50,.5), 0 1px 0 rgba(255,255,255,.25);
+}
+.lcd-input {
+  width: 100%; border: none; background: transparent; padding: 0;
+  font-family: "Consolas", "DejaVu Sans Mono", monospace;
+  font-size: 26px; letter-spacing: .12em; color: #1f3320;
+}
+.lcd-input:focus { outline: none; box-shadow: none; }
+.lcd-input::placeholder { color: #4c6b46; opacity: .75; }
+
+/* пломба */
+.seal { position: relative; width: 44px; text-align: center; }
+.seal-cap {
+  display: block; width: 22px; height: 22px; margin: 0 auto 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #b9bec6, #767c85 60%, #4b5058);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.5), 0 1px 3px rgba(0,0,0,.5);
+}
+.seal-text {
+  font-size: 8px; line-height: 1.1; color: #cfd4da; letter-spacing: .06em;
+}
+
+.panel-marks {
+  display: flex; justify-content: space-between;
+  margin: 10px 4px 16px; font-size: 11px; color: #cfd4da;
+  text-shadow: 0 1px 0 rgba(0,0,0,.4);
+}
+
+/* кнопка */
+.dev-btn {
+  display: block; width: 100%; cursor: pointer;
+  padding: 13px; border-radius: 8px;
+  font: inherit; font-size: 17px; font-weight: 600; letter-spacing: .08em;
+  color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.4);
+  background: linear-gradient(180deg, #4f9bf5, #1f63c8 60%, #17509f);
+  border: 1px solid #143f7d;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 3px 6px rgba(0,0,0,.35);
+}
+.dev-btn:hover { filter: brightness(1.07); }
+.dev-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.45);
+}
+
+/* клеймо */
+.gost {
+  position: absolute; right: 30px; bottom: 26px;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #b9bec6; letter-spacing: .04em;
+  border: 1px solid rgba(255,255,255,.28);
+  background: rgba(255,255,255,.06);
+}
+
+.login-err {
+  margin-top: 14px; text-align: center;
+  font-size: 14px; color: #d84b40;
+}
+
+@media (max-width: 480px) {
+  .panel { padding: 18px 16px 20px; }
+  .plate-title { font-size: 22px; }
+  .lcd-input { font-size: 22px; }
+  .gost { display: none; }
+}
