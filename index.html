@@ -1,1 +1,1436 @@
-index.html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Узлы учёта</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="bar" id="bar"></div>
+<div class="toast" id="toast"></div>
+
+<!-- ============================ ВХОД ============================ -->
+<section class="login" id="login">
+  <div class="login-box">
+    <h1>Узлы учёта</h1>
+    <p class="muted small">Метрологическая служба</p>
+    <input type="password" id="pass" placeholder="Пароль" autocomplete="current-password">
+    <button class="btn btn-main btn-wide" onclick="login()">Войти</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</section>
+
+<!-- ========================= ПРИЛОЖЕНИЕ ========================= -->
+<section class="app" id="app">
+
+  <header>
+    <div class="head-row">
+      <div class="grow">
+        <h1>Узлы учёта<span class="role-tag" id="roleTag" style="display:none">администратор</span></h1>
+        <div class="org" id="org"></div>
+      </div>
+      <div>
+        <label for="user">Кто работает</label>
+        <select id="user" onchange="rememberUser()"></select>
+      </div>
+      <button class="btn btn-small" id="dictBtn" style="display:none" onclick="openDict()">Справочники</button>
+      <button class="btn btn-small" onclick="logout()">Выйти</button>
+    </div>
+  </header>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="filters">
+    <input type="search" id="q" placeholder="Поиск: номер, обозначение, объект, абонент" oninput="searchDebounced()">
+    <select id="fObject" onchange="loadList(false)"><option value="">Все объекты</option></select>
+    <select id="fResource" onchange="loadList(false)"><option value="">Любой ресурс</option></select>
+    <select id="fStatus" onchange="loadList(false)"><option value="">Любой статус</option></select>
+    <button class="btn btn-main" onclick="newNode()">Новый узел</button>
+    <button class="btn" onclick="printRegistry()">Печать реестра</button>
+  </div>
+
+  <div class="list" id="list"></div>
+  <div class="more" id="more" style="display:none">
+    <button class="btn" onclick="loadList(true)">Показать ещё</button>
+  </div>
+  <div class="count" id="count"></div>
+
+</section>
+
+<!-- ====================== КАРТОЧКА УЗЛА ========================= -->
+<div class="overlay" id="nodeModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="grow">
+        <h2 id="nodeTitle">Новый узел учёта</h2>
+        <div class="small muted" id="nodeSub"></div>
+      </div>
+      <button class="x" onclick="closeNode()" aria-label="Закрыть">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-err" id="nodeErr" style="display:none"></div>
+      <div id="nodeForm"></div>
+
+      <div id="nodeExtra" style="display:none">
+
+        <div class="section-head">
+          <h3 class="grow">Состав узла</h3>
+          <button class="btn btn-small" onclick="openDevice(null)">Добавить прибор</button>
+        </div>
+        <div id="devices"></div>
+
+        <div class="section-head">
+          <h3 class="grow">Документы</h3>
+          <button class="btn btn-small" onclick="syncFolder()">Подхватить из папки</button>
+          <a class="btn btn-small" id="folderLink" target="_blank" rel="noopener" style="display:none">Папка на Диске</a>
+        </div>
+        <div id="files"></div>
+
+        <div class="upload">
+          <div class="upload-row">
+            <select id="docType"></select>
+            <input type="text" id="docPart" placeholder="часть">
+            <input type="file" id="fileInput" multiple onchange="uploadFiles()">
+          </div>
+          <div class="hint" id="uploadHint"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-foot" id="nodeFoot"></div>
+  </div>
+</div>
+
+<!-- ========================== ПРИБОР ============================ -->
+<div class="overlay" id="deviceModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="grow"><h2 id="deviceTitle">Прибор</h2></div>
+      <button class="x" onclick="close_('deviceModal')" aria-label="Закрыть">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-err" id="deviceErr" style="display:none"></div>
+      <div id="deviceForm"></div>
+    </div>
+    <div class="modal-foot" id="deviceFoot"></div>
+  </div>
+</div>
+
+<!-- ========================== ПОВЕРКА =========================== -->
+<div class="overlay" id="checkModal">
+  <div class="modal modal-narrow">
+    <div class="modal-head">
+      <div class="grow">
+        <h2>Поверка</h2>
+        <div class="small muted" id="checkSub"></div>
+      </div>
+      <button class="x" onclick="close_('checkModal')" aria-label="Закрыть">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-err" id="checkErr" style="display:none"></div>
+      <div id="checkForm"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-main" onclick="saveCheck()">Внести поверку</button>
+      <button class="btn" onclick="close_('checkModal')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== СРОКИ ПОВЕРОК ========================= -->
+<div class="overlay" id="dueModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="grow"><h2 id="dueTitle">Сроки</h2></div>
+      <button class="x" onclick="close_('dueModal')" aria-label="Закрыть">&times;</button>
+    </div>
+    <div class="modal-body" id="dueBody"></div>
+  </div>
+</div>
+
+<!-- ======================= СПРАВОЧНИКИ ========================== -->
+<div class="overlay" id="dictModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="grow"><h2>Справочники</h2></div>
+      <button class="x" onclick="close_('dictModal')" aria-label="Закрыть">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="filters">
+        <select id="dictPick" onchange="renderDict()">
+          <option value="objects">Объекты</option>
+          <option value="departments">Подразделения</option>
+          <option value="models">Модели приборов</option>
+          <option value="people">Люди</option>
+        </select>
+      </div>
+      <div class="form-err" id="dictErr" style="display:none"></div>
+      <div id="dictAdd"></div>
+      <div id="dictList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ВОПРОС И ПОДТВЕРЖДЕНИЕ ================== -->
+<div class="overlay" id="askModal" style="z-index:150">
+  <div class="modal modal-narrow">
+    <div class="modal-head"><div class="grow"><h2 id="askTitle">Подтверждение</h2></div></div>
+    <div class="modal-body">
+      <p id="askText" style="margin:0"></p>
+      <input type="text" id="askInput" style="display:none; margin-top:12px">
+    </div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button class="btn" id="askNo">Отмена</button>
+      <button class="btn btn-main" id="askYes">Да</button>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script src="config.js"></script>
+<script src="templates.js"></script>
+<script>
+/* ============================================================
+   БАЗА УЗЛОВ УЧЁТА МЕТРОЛОГИЧЕСКОЙ СЛУЖБЫ
+   Логика сайта, версия 1.0
+   ------------------------------------------------------------
+   Адрес сервера лежит в config.js, печатные формы в templates.js,
+   оформление в styles.css. Здесь только поведение.
+   ============================================================ */
+
+const API = (typeof API_URL !== 'undefined') ? String(API_URL).trim() : '';
+
+const S = {
+  pass: '',
+  role: 'user',
+  user: '',
+  init: null,
+  nodes: [],
+  due: null,
+  offset: 0,
+  total: 0,
+  node: null,
+  devices: [],
+  files: [],
+  folderUrl: '',
+  editingDevice: null,
+  checkDevice: null
+};
+
+const PAGE = 30;
+
+function isAdmin() { return S.role === 'admin'; }
+
+
+/* ---------------- мелкая утварь ---------------- */
+
+function $(id) { return document.getElementById(id); }
+function open_(id) { $(id).classList.add('open'); }
+function close_(id) { $(id).classList.remove('open'); }
+function bar(on) { $('bar').classList.toggle('on', !!on); }
+
+function esc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+let toastTimer = null;
+function toast(msg, bad) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.toggle('bad', !!bad);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove('show'); }, 4200);
+}
+
+/**
+ * Замена confirm и prompt: браузерные окна на телефоне
+ * выглядят чужеродно и в некоторых обозревателях блокируются.
+ */
+function ask(o) {
+  return new Promise(function (resolve) {
+    $('askTitle').textContent = o.title || 'Подтверждение';
+    $('askText').textContent = o.text || '';
+    const inp = $('askInput');
+    inp.style.display = o.input ? 'block' : 'none';
+    inp.value = '';
+    inp.placeholder = o.placeholder || '';
+    $('askYes').textContent = o.yes || 'Да';
+    open_('askModal');
+    if (o.input) setTimeout(function () { inp.focus(); }, 60);
+
+    function done(v) { close_('askModal'); resolve(v); }
+    $('askYes').onclick = function () {
+      if (o.input && !inp.value.trim()) { inp.focus(); return; }
+      done(o.input ? inp.value.trim() : true);
+    };
+    $('askNo').onclick = function () { done(null); };
+    inp.onkeydown = function (e) { if (e.key === 'Enter') $('askYes').onclick(); };
+  });
+}
+
+
+/* ---------------- даты ---------------- */
+
+/** «20.06.2026» -> «2026-06-20» для поля ввода даты */
+function toISO(ru) {
+  const m = String(ru || '').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  return m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+}
+
+function fromISO(iso) {
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? m[3] + '.' + m[2] + '.' + m[1] : '';
+}
+
+function ruToDate(ru) {
+  const m = String(ru || '').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
+}
+
+function daysLeft(ru) {
+  const d = ruToDate(ru);
+  if (!d) return null;
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((d - t) / 86400000);
+}
+
+/**
+ * Дата следующей поверки. Повторяет расчёт сервера один в один:
+ * дата поверки плюс интервал минус день. Считается здесь только
+ * ради подсказки в форме, решает всё равно сервер.
+ */
+function nextCheck(ru, months) {
+  const d = ruToDate(ru), m = Number(months);
+  if (!d || !m) return '';
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + m);
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, last));
+  d.setDate(d.getDate() - 1);
+  const p = function (n) { return (n < 10 ? '0' : '') + n; };
+  return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear();
+}
+
+function plural(n, one, few, many) {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+}
+
+
+/* ---------------- связь с сервером ---------------- */
+
+/**
+ * Основной путь - POST с Content-Type: text/plain, тогда браузер
+ * не делает предварительный запрос OPTIONS, на который Apps Script
+ * отвечать не умеет. Если POST в этом браузере блокируется
+ * (антивирус, прокси), один раз за сеанс переключаемся на JSONP.
+ */
+let usePost = true;
+
+async function call(params) {
+  const p = Object.assign({ password: S.pass, user: S.user }, params);
+  bar(true);
+  try {
+    if (usePost) {
+      try {
+        return await post(p);
+      } catch (e) {
+        usePost = false;
+      }
+    }
+    return await jsonp(p);
+  } finally {
+    bar(false);
+  }
+}
+
+async function post(p) {
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(p),
+    redirect: 'follow'
+  });
+  return await r.json();
+}
+
+function jsonp(p) {
+  return new Promise(function (resolve) {
+    const cb = 'cb' + Date.now() + Math.floor(Math.random() * 1000);
+    const url = new URL(API);
+    Object.keys(p).forEach(function (k) {
+      const v = p[k];
+      url.searchParams.set(k, (v && typeof v === 'object') ? JSON.stringify(v) : String(v == null ? '' : v));
+    });
+    url.searchParams.set('callback', cb);
+
+    const tag = document.createElement('script');
+    let done = false, timer = null;
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cb];
+      if (tag.parentNode) tag.parentNode.removeChild(tag);
+    }
+
+    window[cb] = function (data) { if (!done) { done = true; resolve(data); cleanup(); } };
+    timer = setTimeout(function () {
+      if (!done) { done = true; resolve({ success: false, error: 'Нет ответа от сервера' }); cleanup(); }
+    }, 40000);
+    tag.onerror = function () {
+      if (!done) { done = true; resolve({ success: false, error: 'Нет связи с сервером' }); cleanup(); }
+    };
+
+    tag.src = url.toString();
+    document.body.appendChild(tag);
+  });
+}
+
+
+/* ---------------- вход ---------------- */
+
+async function login() {
+  const pass = $('pass').value.trim();
+  if (!pass) return;
+  if (!API) { $('loginErr').textContent = 'Не задан адрес сервера в config.js'; return; }
+
+  S.pass = pass;
+  $('loginErr').textContent = '';
+
+  const r = await call({ action: 'init' });
+  if (!r || !r.success) {
+    S.pass = '';
+    $('loginErr').textContent = (r && r.error) || 'Не удалось войти';
+    return;
+  }
+
+  sessionStorage.setItem('auth', pass);
+  applyInit(r);
+}
+
+function applyInit(r) {
+  S.init = r;
+  S.role = r.role;
+
+  $('org').textContent = r.org || '';
+  $('roleTag').style.display = isAdmin() ? '' : 'none';
+  $('dictBtn').style.display = isAdmin() ? '' : 'none';
+
+  fillSelect($('fObject'), r.objects.map(function (o) { return o.name; }), '', 'Все объекты');
+  fillSelect($('fResource'), r.resources, '', 'Любой ресурс');
+  fillSelect($('fStatus'), r.nodeStatuses, '', 'Любой статус');
+  fillSelect($('docType'), r.docTypes, 'паспорт');
+
+  const names = r.people.map(function (p) { return p.full; });
+  fillSelect($('user'), names, localStorage.getItem('user') || '', 'Выберите себя');
+  S.user = $('user').value;
+
+  $('uploadHint').textContent =
+    'Принимаются PDF, фотографии и документы Word. Предел ' + r.maxFileMb +
+    ' МБ на файл, фотографии сжимаются перед отправкой. ' +
+    'Что крупнее - положите в папку узла на Диске и нажмите «Подхватить из папки».';
+
+  $('login').classList.remove('on');
+  $('app').classList.add('on');
+
+  loadList(false);
+  loadDue();
+}
+
+function rememberUser() {
+  S.user = $('user').value;
+  localStorage.setItem('user', S.user);
+}
+
+function logout() {
+  sessionStorage.removeItem('auth');
+  location.reload();
+}
+
+function fillSelect(el, options, value, emptyLabel) {
+  const list = (options || []).slice();
+  el.innerHTML =
+    (emptyLabel ? '<option value="">' + esc(emptyLabel) + '</option>' : '') +
+    list.map(function (o) {
+      const v = (o && o.value !== undefined) ? o.value : o;
+      const t = (o && o.text !== undefined) ? o.text : o;
+      return '<option value="' + esc(v) + '">' + esc(t) + '</option>';
+    }).join('');
+  if (value) el.value = value;
+}
+
+
+/* ---------------- список узлов ---------------- */
+
+let searchTimer = null;
+function searchDebounced() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function () { loadList(false); }, 400);
+}
+
+async function loadList(append) {
+  if (!append) S.offset = 0;
+
+  const r = await call({
+    action: 'list',
+    q: $('q').value.trim(),
+    object: $('fObject').value,
+    resource: $('fResource').value,
+    status: $('fStatus').value,
+    limit: PAGE,
+    offset: S.offset
+  });
+
+  if (!r.success) { toast(r.error, true); return; }
+
+  S.nodes = append ? S.nodes.concat(r.nodes) : r.nodes;
+  S.offset = S.nodes.length;
+  S.total = r.total;
+
+  $('list').innerHTML = S.nodes.length
+    ? S.nodes.map(rowHtml).join('')
+    : '<div class="empty">Ничего не найдено</div>';
+
+  $('more').style.display = r.hasMore ? '' : 'none';
+  $('count').textContent = S.total
+    ? 'показано ' + S.nodes.length + ' из ' + S.total
+    : '';
+}
+
+function rowHtml(n) {
+  const off = (n.status === 'Выведен из эксплуатации' || n.status === 'Аннулировано');
+  const title = (n.code ? n.code + ' · ' : '') + (n.resource || n.name);
+
+  let side = '';
+  if (off) {
+    side = '<div class="bot">' + esc(n.status.toLowerCase()) + '</div>';
+  } else if (n.overdue) {
+    side = '<div class="top danger">' +
+             (n.overdue > 1 ? n.overdue + ' поверки просрочены' : 'поверка просрочена') +
+           '</div><div class="bot">с ' + esc(n.nearest) + '</div>';
+  } else if (n.nearest) {
+    const d = daysLeft(n.nearest);
+    const warn = (d !== null && d <= (S.init.urgentDays || 30));
+    side = '<div class="top' + (warn ? ' warn' : '') + '">поверка через ' + d + ' ' +
+             plural(d, 'день', 'дня', 'дней') + '</div>' +
+           '<div class="bot">до ' + esc(n.nearest) + '</div>';
+  } else if (n.devices) {
+    side = '<div class="bot">поверки не внесены</div>';
+  } else {
+    side = '<div class="bot">приборов нет</div>';
+  }
+
+  return '<div class="row' + (off ? ' off' : '') + '" onclick="openNode(\'' + n.id + '\')">' +
+    '<div class="row-num">' + esc(n.number) + '</div>' +
+    '<div class="row-main">' +
+      '<div class="row-title">' + esc(title) + '</div>' +
+      '<div class="row-sub">' + esc(n.object) +
+        (n.purpose ? ' · ' + esc(n.purpose) : '') +
+        (n.name && n.code ? ' · ' + esc(n.name) : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="row-side">' + side + '</div>' +
+  '</div>';
+}
+
+
+/* ---------------- сроки поверок ---------------- */
+
+async function loadDue() {
+  const r = await call({ action: 'due' });
+  if (!r.success) return;
+  S.due = r;
+
+  const g = dueGroups();
+  $('chips').innerHTML = g.map(function (x, i) {
+    return '<span class="chip ' + x.cls + (x.items.length ? '' : ' zero') +
+           '" onclick="showDue(' + i + ')">' + esc(x.title) + ' · ' + x.items.length + '</span>';
+  }).join('');
+}
+
+function dueGroups() {
+  const d = S.due || { devices: [], admissions: [], urgentDays: 30, warnDays: 90 };
+  return [
+    { title: 'Просрочено', cls: 'danger',
+      items: d.devices.filter(function (i) { return i.group === 'просрочено'; }) },
+    { title: 'Срочно, до ' + d.urgentDays + ' дней', cls: 'warn',
+      items: d.devices.filter(function (i) { return i.group === 'срочно'; }) },
+    { title: 'Скоро, до ' + d.warnDays + ' дней', cls: '',
+      items: d.devices.filter(function (i) { return i.group === 'скоро'; }) },
+    { title: 'Допуск узла истекает', cls: '', items: d.admissions, admission: true }
+  ];
+}
+
+function showDue(i) {
+  const g = dueGroups()[i];
+  $('dueTitle').textContent = g.title;
+
+  $('dueBody').innerHTML = g.items.length
+    ? g.items.map(function (x) {
+        const left = g.admission ? x.daysLeft : x.daysLeft;
+        const date = g.admission ? x.till : x.next;
+        const what = g.admission
+          ? 'допуск узла'
+          : esc(x.position ? x.position + ' · ' : '') + esc(x.brand) +
+            (x.serial ? ' зав. № ' + esc(x.serial) : '');
+        return '<div class="row" onclick="close_(\'dueModal\'); openNode(\'' + x.nodeId + '\')">' +
+          '<div class="row-num">' + esc(x.nodeNumber) + '</div>' +
+          '<div class="row-main">' +
+            '<div class="row-title">' + esc(x.nodeName) + '</div>' +
+            '<div class="row-sub">' + what + ' · ' + esc(x.object) + '</div>' +
+          '</div>' +
+          '<div class="row-side"><div class="top' + (left < 0 ? ' danger' : '') + '">' +
+            (left < 0 ? 'просрочено' : 'через ' + left + ' ' + plural(left, 'день', 'дня', 'дней')) +
+          '</div><div class="bot">' + esc(date) + '</div></div>' +
+        '</div>';
+      }).join('')
+    : '<div class="empty">Пусто. Это хорошая новость.</div>';
+
+  open_('dueModal');
+}
+
+
+/* ---------------- форма узла ---------------- */
+
+const NODE_FORM = [
+  { legend: 'Основное', fields: [
+    { k: 'Обозначение', label: 'Обозначение', hint: 'как узел называют между собой: УУТЭ-1, ХВС магазин №7' },
+    { k: 'Наименование', label: 'Наименование', wide: true },
+    { k: 'Вид ресурса', label: 'Вид ресурса', type: 'select', from: 'resources' },
+    { k: 'Назначение', label: 'Назначение', type: 'select', from: 'purposes' },
+    { k: 'Объект', label: 'Объект', type: 'select', from: 'objects', onchange: 'objectPicked()' },
+    { k: 'Адрес', label: 'Адрес' },
+    { k: 'Место установки', label: 'Место установки' },
+    { k: 'Подразделение', label: 'Подразделение', type: 'select', from: 'departments' }
+  ]},
+  { legend: 'Договор', fields: [
+    { k: 'Абонент', label: 'Абонент' },
+    { k: 'Ресурсоснабжающая организация', label: 'Ресурсоснабжающая организация' },
+    { k: 'Договор номер', label: 'Договор номер' },
+    { k: 'Договор дата', label: 'Договор дата', type: 'date' }
+  ]},
+  { legend: 'Проект и монтаж', fields: [
+    { k: 'Схема учёта', label: 'Схема учёта' },
+    { k: 'Проект номер', label: 'Проект номер' },
+    { k: 'Проектная организация', label: 'Проектная организация' },
+    { k: 'Монтажная организация', label: 'Монтажная организация' }
+  ]},
+  { legend: 'Ввод и вывод из эксплуатации', fields: [
+    { k: 'Дата акта ввода', label: 'Дата акта ввода', type: 'date' },
+    { k: 'Номер акта ввода', label: 'Номер акта ввода' },
+    { k: 'Допуск действует до', label: 'Допуск действует до', type: 'date' },
+    { k: 'Дата акта вывода', label: 'Дата акта вывода', type: 'date' },
+    { k: 'Номер акта вывода', label: 'Номер акта вывода' },
+    { k: 'Причина вывода', label: 'Причина вывода', wide: true }
+  ]},
+  { legend: 'Ответственность и съём показаний', fields: [
+    { k: 'Ответственный ФИО', label: 'Ответственный', type: 'select', from: 'people', onchange: 'personPicked()' },
+    { k: 'Ответственный должность', label: 'Должность' },
+    { k: 'Способ съёма показаний', label: 'Способ съёма показаний' },
+    { k: 'Идентификатор в системе диспетчеризации', label: 'Идентификатор в диспетчеризации' },
+    { k: 'Примечание', label: 'Примечание', type: 'area', wide: true }
+  ]}
+];
+
+function optionsOf(from) {
+  const r = S.init;
+  if (from === 'objects') return r.objects.map(function (o) { return o.name; });
+  if (from === 'people') return r.people.map(function (p) { return p.full; });
+  if (from === 'departments') return r.departments;
+  if (from === 'resources') return r.resources;
+  if (from === 'purposes') return r.purposes;
+  if (from === 'deviceTypes') return r.deviceTypes;
+  if (from === 'deviceStatuses') return r.deviceStatuses;
+  if (from === 'checkKinds') return r.checkKinds;
+  if (from === 'checkResults') return r.checkResults;
+  return [];
+}
+
+function fieldHtml(f, data, prefix) {
+  const id = (prefix || 'f_') + f.k.replace(/[^\wа-яА-ЯёЁ]/g, '_');
+  const raw = data ? (data[f.k] == null ? '' : String(data[f.k])) : '';
+  const on = f.onchange ? ' onchange="' + f.onchange + '"' : '';
+  let input;
+
+  if (f.type === 'select') {
+    const opts = optionsOf(f.from);
+    input = '<select id="' + id + '"' + on + '><option value=""></option>' +
+      opts.map(function (o) {
+        return '<option value="' + esc(o) + '"' + (o === raw ? ' selected' : '') + '>' + esc(o) + '</option>';
+      }).join('') + '</select>';
+  } else if (f.type === 'date') {
+    input = '<input type="date" id="' + id + '" value="' + esc(toISO(raw)) + '"' + on + '>';
+  } else if (f.type === 'area') {
+    input = '<textarea id="' + id + '"' + on + '>' + esc(raw) + '</textarea>';
+  } else if (f.type === 'number') {
+    input = '<input type="number" id="' + id + '" value="' + esc(raw) + '"' + on + '>';
+  } else if (f.type === 'list') {
+    input = '<input type="text" id="' + id + '" list="' + f.list + '" value="' + esc(raw) + '"' + on + '>';
+  } else {
+    input = '<input type="text" id="' + id + '" value="' + esc(raw) + '"' + on + '>';
+  }
+
+  return '<div class="field' + (f.wide ? ' wide' : '') + '">' +
+    '<label for="' + id + '">' + esc(f.label) + '</label>' + input +
+    (f.hint ? '<div class="hint">' + esc(f.hint) + '</div>' : '') +
+  '</div>';
+}
+
+function formHtml(groups, data, prefix) {
+  return groups.map(function (g) {
+    return '<fieldset><legend>' + esc(g.legend) + '</legend><div class="fields">' +
+      g.fields.map(function (f) { return fieldHtml(f, data, prefix); }).join('') +
+    '</div></fieldset>';
+  }).join('');
+}
+
+function collect(groups, prefix) {
+  const out = {};
+  groups.forEach(function (g) {
+    g.fields.forEach(function (f) {
+      const el = $((prefix || 'f_') + f.k.replace(/[^\wа-яА-ЯёЁ]/g, '_'));
+      if (!el) return;
+      out[f.k] = (f.type === 'date') ? fromISO(el.value) : el.value.trim();
+    });
+  });
+  return out;
+}
+
+/** Выбрали объект - подставляем его адрес и подразделение. */
+function objectPicked() {
+  const name = $('f_Объект').value;
+  const o = S.init.objects.filter(function (x) { return x.name === name; })[0];
+  if (!o) return;
+  if (o.address && !$('f_Адрес').value) $('f_Адрес').value = o.address;
+  if (o.dept && !$('f_Подразделение').value) $('f_Подразделение').value = o.dept;
+}
+
+/** Выбрали человека - подставляем его должность. */
+function personPicked() {
+  const name = $('f_Ответственный_ФИО').value;
+  const p = S.init.people.filter(function (x) { return x.full === name; })[0];
+  if (p && p.post) $('f_Ответственный_должность').value = p.post;
+}
+
+
+/* ---------------- карточка узла ---------------- */
+
+function newNode() {
+  S.node = null; S.devices = []; S.files = []; S.folderUrl = '';
+  $('nodeTitle').textContent = 'Новый узел учёта';
+  $('nodeSub').textContent = '';
+  $('nodeErr').style.display = 'none';
+  $('nodeForm').innerHTML = formHtml(NODE_FORM, {}, 'f_');
+  $('nodeExtra').style.display = 'none';
+  $('nodeFoot').innerHTML =
+    '<button class="btn btn-main" onclick="saveNode()">Создать</button>' +
+    '<button class="btn" onclick="closeNode()">Отмена</button>';
+  open_('nodeModal');
+}
+
+async function openNode(id) {
+  const r = await call({ action: 'node', id: id });
+  if (!r.success) { toast(r.error, true); return; }
+
+  S.node = r.node;
+  S.devices = r.devices;
+  S.files = r.files;
+  S.folderUrl = r.folderUrl;
+
+  $('nodeTitle').textContent = '№ ' + r.node['Номер'] + ' · ' +
+    (r.node['Обозначение'] || r.node['Наименование']);
+  $('nodeSub').textContent = [r.node['Статус'], r.node['Вид ресурса'], r.node['Объект']]
+    .filter(Boolean).join(' · ');
+  $('nodeErr').style.display = 'none';
+  $('nodeForm').innerHTML = formHtml(NODE_FORM, r.node, 'f_');
+  $('nodeExtra').style.display = '';
+
+  renderDevices();
+  renderFiles();
+
+  const link = $('folderLink');
+  link.style.display = S.folderUrl ? '' : 'none';
+  link.href = S.folderUrl || '#';
+
+  const cancelled = (r.node['Статус'] === 'Аннулировано');
+  $('nodeFoot').innerHTML =
+    (cancelled ? '' : '<button class="btn btn-main" onclick="saveNode()">Сохранить</button>') +
+    '<button class="btn" onclick="printNode()">Печать карточки</button>' +
+    '<div class="spacer"></div>' +
+    (isAdmin() && !cancelled
+      ? '<button class="btn btn-danger" onclick="cancelNode()">Аннулировать</button>' : '') +
+    '<button class="btn" onclick="closeNode()">Закрыть</button>';
+
+  open_('nodeModal');
+}
+
+function closeNode() { close_('nodeModal'); }
+
+async function saveNode() {
+  const card = collect(NODE_FORM, 'f_');
+  const isNew = !S.node;
+
+  const r = await call(isNew
+    ? { action: 'saveNode', node: card, clientId: 'w' + Date.now() + Math.floor(Math.random() * 1e4) }
+    : { action: 'updateNode', id: S.node['id'], node: card });
+
+  if (!r.success) {
+    $('nodeErr').textContent = r.error;
+    $('nodeErr').style.display = '';
+    return;
+  }
+
+  $('nodeErr').style.display = 'none';
+  toast(isNew ? 'Узел создан, номер ' + r.number : (r.unchanged ? 'Изменений нет' : 'Сохранено'));
+
+  await loadList(false);
+  await loadDue();
+  if (isNew) openNode(r.id); else openNode(S.node['id']);
+}
+
+async function cancelNode() {
+  const reason = await ask({
+    title: 'Аннулировать узел',
+    text: 'Строка останется в реестре, номер не переиспользуется. Укажите причину.',
+    input: true, placeholder: 'например: заведён дважды', yes: 'Аннулировать'
+  });
+  if (!reason) return;
+
+  const r = await call({ action: 'cancelNode', id: S.node['id'], reason: reason });
+  if (!r.success) { toast(r.error, true); return; }
+
+  toast('Узел аннулирован');
+  closeNode();
+  loadList(false);
+  loadDue();
+}
+
+
+/* ---------------- приборы ---------------- */
+
+function renderDevices() {
+  if (!S.devices.length) {
+    $('devices').innerHTML = '<div class="muted small">Приборы не внесены</div>';
+    return;
+  }
+
+  $('devices').innerHTML = S.devices.map(function (d) {
+    const off = d['Статус прибора'] === 'Снят';
+    const left = d.daysLeft;
+
+    let badge = '<span class="badge">поверка не внесена</span>';
+    if (off) badge = '<span class="badge">снят ' + esc(d['Дата снятия']) + '</span>';
+    else if (left !== null && left !== undefined) {
+      const cls = left < 0 ? 'danger' : (left <= (S.init.urgentDays || 30) ? 'warn' : 'ok');
+      badge = '<span class="badge ' + cls + '">' +
+        (left < 0 ? 'просрочено с ' + esc(d['Дата следующей поверки'])
+                  : 'до ' + esc(d['Дата следующей поверки'])) + '</span>';
+    }
+
+    const checks = (d.checks || []).map(function (c) {
+      return '<div class="check-row">' +
+        '<span>' + esc(c['Дата поверки']) + '</span>' +
+        '<span class="grow">' + esc(c['Результат']) +
+          (c['Номер свидетельства'] ? ' · ' + esc(c['Номер свидетельства']) : '') +
+          (c['Поверитель'] ? ' · ' + esc(c['Поверитель']) : '') + '</span>' +
+        '<span>до ' + esc(c['Дата следующей поверки'] || '—') + '</span>' +
+        (isAdmin() ? '<button class="btn btn-small" onclick="deleteCheck(\'' + c['id'] + '\')">×</button>' : '') +
+      '</div>';
+    }).join('');
+
+    return '<div class="device' + (off ? ' off' : '') + '">' +
+      '<div class="device-head">' +
+        '<div class="grow">' +
+          '<div class="device-title">' +
+            (d['Позиция'] ? esc(d['Позиция']) + ' · ' : '') + esc(d['Марка']) +
+            (d['Модификация'] ? ' ' + esc(d['Модификация']) : '') +
+          '</div>' +
+          '<div class="device-sub">' + esc(d['Тип прибора']) +
+            (d['Заводской номер'] ? ' · зав. № ' + esc(d['Заводской номер']) : '') +
+            (d['Год выпуска'] ? ' · ' + esc(d['Год выпуска']) + ' г.' : '') +
+            (d['Диаметр Ду, мм'] ? ' · Ду ' + esc(d['Диаметр Ду, мм']) : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="right">' + badge + '</div>' +
+      '</div>' +
+      (checks ? '<div class="checks">' + checks + '</div>' : '') +
+      '<div class="section-head" style="margin:10px 0 0">' +
+        '<div class="grow"></div>' +
+        '<button class="btn btn-small" onclick="openCheck(\'' + d['id'] + '\')">Внести поверку</button>' +
+        '<button class="btn btn-small" onclick="openDevice(\'' + d['id'] + '\')">Изменить</button>' +
+        (isAdmin() ? '<button class="btn btn-small btn-danger" onclick="deleteDevice(\'' + d['id'] + '\')">Удалить</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function deviceForm(isNew) {
+  const groups = [
+    { legend: 'Прибор', fields: [
+      { k: 'Позиция', label: 'Позиция по схеме', hint: 'ВЫЧ, ТС1, ПД2, G1' },
+      { k: 'Тип прибора', label: 'Тип прибора', type: 'select', from: 'deviceTypes' },
+      { k: 'Марка', label: 'Марка', type: 'list', list: 'models', onchange: 'brandPicked()' },
+      { k: 'Модификация', label: 'Модификация' },
+      { k: 'Заводской номер', label: 'Заводской номер' },
+      { k: 'Год выпуска', label: 'Год выпуска', type: 'number' },
+      { k: 'Номер в госреестре СИ', label: 'Номер в госреестре СИ' },
+      { k: 'Дата ввода в работу', label: 'Дата ввода в работу', type: 'date' }
+    ]},
+    { legend: 'Метрология и настройка', fields: [
+      { k: 'Межповерочный интервал, мес', label: 'Межповерочный интервал, мес', type: 'number' },
+      { k: 'Диаметр Ду, мм', label: 'Диаметр Ду, мм' },
+      { k: 'Диапазон измерений', label: 'Диапазон измерений' },
+      { k: 'Класс точности', label: 'Класс точности' },
+      { k: 'Цена импульса', label: 'Цена импульса' },
+      { k: 'Параметры настройки', label: 'Параметры настройки' },
+      { k: 'Примечание', label: 'Примечание', type: 'area', wide: true }
+    ]}
+  ];
+
+  if (!isNew) {
+    groups.push({ legend: 'Снятие с узла', fields: [
+      { k: 'Статус прибора', label: 'Статус', type: 'select', from: 'deviceStatuses' },
+      { k: 'Дата снятия', label: 'Дата снятия', type: 'date' },
+      { k: 'Причина снятия', label: 'Причина снятия', wide: true }
+    ]});
+  }
+
+  return groups;
+}
+
+const FIRST_CHECK_FORM = [
+  { legend: 'Последняя поверка, из свидетельства на руках', fields: [
+    { k: 'Дата поверки', label: 'Дата поверки', type: 'date', onchange: 'recalcCheck("c_")' },
+    { k: 'Результат', label: 'Результат', type: 'select', from: 'checkResults' },
+    { k: 'Дата следующей поверки', label: 'Действительна до', type: 'date' },
+    { k: 'Номер свидетельства', label: 'Номер свидетельства' },
+    { k: 'Номер записи ФГИС Аршин', label: 'Номер записи ФГИС «Аршин»' },
+    { k: 'Поверитель', label: 'Кто поверял' }
+  ]}
+];
+
+function openDevice(id) {
+  const isNew = !id;
+  S.editingDevice = isNew ? null : S.devices.filter(function (d) { return d['id'] === id; })[0];
+
+  $('deviceTitle').textContent = isNew ? 'Новый прибор' : 'Прибор';
+  $('deviceErr').style.display = 'none';
+
+  const models = S.init.models.map(function (m) { return m.brand; });
+  const datalist = '<datalist id="models">' +
+    models.map(function (b) { return '<option value="' + esc(b) + '">'; }).join('') + '</datalist>';
+
+  $('deviceForm').innerHTML = datalist +
+    formHtml(deviceForm(isNew), S.editingDevice || {}, 'd_') +
+    (isNew ? formHtml(FIRST_CHECK_FORM, { 'Результат': 'пригоден' }, 'c_') : '');
+
+  $('deviceFoot').innerHTML =
+    '<button class="btn btn-main" onclick="saveDevice()">' + (isNew ? 'Добавить' : 'Сохранить') + '</button>' +
+    '<button class="btn" onclick="close_(\'deviceModal\')">Отмена</button>';
+
+  open_('deviceModal');
+}
+
+/** Выбрали марку - подставляем интервал и номер в госреестре. */
+function brandPicked() {
+  const brand = $('d_Марка').value.trim().toLowerCase();
+  const m = S.init.models.filter(function (x) { return x.brand.toLowerCase() === brand; })[0];
+  if (!m) return;
+  if (m.mpi && !$('d_Межповерочный_интервал__мес').value) {
+    $('d_Межповерочный_интервал__мес').value = m.mpi;
+  }
+  if (m.reg && !$('d_Номер_в_госреестре_СИ').value) {
+    $('d_Номер_в_госреестре_СИ').value = m.reg;
+  }
+  if (m.type && !$('d_Тип_прибора').value) $('d_Тип_прибора').value = m.type;
+  recalcCheck('c_');
+}
+
+/** Дата поверки плюс интервал: подсказка, пока поле «действительна до» пустое. */
+function recalcCheck(prefix) {
+  const date = $(prefix + 'Дата_поверки');
+  const till = $(prefix + 'Дата_следующей_поверки');
+  if (!date || !till || till.value) return;
+
+  const mpiEl = $(prefix + 'Межповерочный_интервал__мес') || $('d_Межповерочный_интервал__мес');
+  const mpi = mpiEl ? mpiEl.value : '';
+  const next = nextCheck(fromISO(date.value), mpi);
+  if (next) till.value = toISO(next);
+}
+
+async function saveDevice() {
+  const isNew = !S.editingDevice;
+  const device = collect(deviceForm(isNew), 'd_');
+
+  const params = isNew
+    ? { action: 'saveDevice', nodeId: S.node['id'], device: device }
+    : { action: 'updateDevice', id: S.editingDevice['id'], device: device };
+
+  if (isNew) {
+    const check = collect(FIRST_CHECK_FORM, 'c_');
+    if (check['Дата поверки']) {
+      check['Вид поверки'] = 'периодическая';
+      check['Межповерочный интервал, мес'] = device['Межповерочный интервал, мес'];
+      params.check = check;
+    }
+  }
+
+  const r = await call(params);
+  if (!r.success) {
+    $('deviceErr').textContent = r.error;
+    $('deviceErr').style.display = '';
+    return;
+  }
+
+  close_('deviceModal');
+  toast(isNew ? (r.newBrand ? 'Прибор добавлен, марка занесена в справочник' : 'Прибор добавлен')
+              : 'Сохранено');
+
+  if (r.newBrand) refreshModels();
+  await openNode(S.node['id']);
+  loadList(false);
+  loadDue();
+}
+
+async function deleteDevice(id) {
+  const yes = await ask({
+    title: 'Удалить прибор',
+    text: 'Обычно прибор не удаляют, а снимают: ставят дату снятия, и он остаётся в истории узла. ' +
+          'Удаление уносит и его поверки. Точно удалить?',
+    yes: 'Удалить'
+  });
+  if (!yes) return;
+
+  const r = await call({ action: 'deleteDevice', id: id });
+  if (!r.success) { toast(r.error, true); return; }
+
+  toast('Прибор удалён, поверок удалено: ' + r.checksDeleted);
+  await openNode(S.node['id']);
+  loadList(false);
+  loadDue();
+}
+
+/** После автоматического пополнения справочника марок обновляем список подсказок. */
+async function refreshModels() {
+  const r = await call({ action: 'init' });
+  if (r.success) S.init = r;
+}
+
+
+/* ---------------- поверки ---------------- */
+
+const CHECK_FORM = [
+  { legend: 'Поверка', fields: [
+    { k: 'Вид поверки', label: 'Вид поверки', type: 'select', from: 'checkKinds' },
+    { k: 'Дата поверки', label: 'Дата поверки', type: 'date', onchange: 'recalcCheck("k_")' },
+    { k: 'Межповерочный интервал, мес', label: 'Интервал, мес', type: 'number', onchange: 'recalcCheck("k_")' },
+    { k: 'Дата следующей поверки', label: 'Действительна до', type: 'date' },
+    { k: 'Результат', label: 'Результат', type: 'select', from: 'checkResults' },
+    { k: 'Номер свидетельства', label: 'Номер свидетельства' },
+    { k: 'Номер записи ФГИС Аршин', label: 'Номер записи ФГИС «Аршин»' },
+    { k: 'Поверитель', label: 'Кто поверял' },
+    { k: 'Примечание', label: 'Примечание', wide: true }
+  ]}
+];
+
+function openCheck(deviceId) {
+  const d = S.devices.filter(function (x) { return x['id'] === deviceId; })[0];
+  if (!d) return;
+  S.checkDevice = d;
+
+  $('checkSub').textContent = (d['Позиция'] ? d['Позиция'] + ' · ' : '') +
+    d['Марка'] + (d['Заводской номер'] ? ', зав. № ' + d['Заводской номер'] : '');
+  $('checkErr').style.display = 'none';
+  $('checkForm').innerHTML = formHtml(CHECK_FORM, {
+    'Вид поверки': 'периодическая',
+    'Результат': 'пригоден',
+    'Межповерочный интервал, мес': d['Межповерочный интервал, мес']
+  }, 'k_');
+
+  open_('checkModal');
+}
+
+async function saveCheck() {
+  const check = collect(CHECK_FORM, 'k_');
+  const r = await call({ action: 'saveCheck', deviceId: S.checkDevice['id'], check: check });
+
+  if (!r.success) {
+    $('checkErr').textContent = r.error;
+    $('checkErr').style.display = '';
+    return;
+  }
+
+  close_('checkModal');
+  toast('Поверка внесена' + (r.next ? ', следующая до ' + r.next : ''));
+  await openNode(S.node['id']);
+  loadList(false);
+  loadDue();
+}
+
+async function deleteCheck(id) {
+  const yes = await ask({ title: 'Удалить поверку', text: 'Запись исчезнет из истории прибора.', yes: 'Удалить' });
+  if (!yes) return;
+
+  const r = await call({ action: 'deleteCheck', id: id });
+  if (!r.success) { toast(r.error, true); return; }
+
+  toast('Поверка удалена');
+  await openNode(S.node['id']);
+  loadDue();
+}
+
+
+/* ---------------- вложения ---------------- */
+
+function renderFiles() {
+  if (!S.files.length) {
+    $('files').innerHTML = '<div class="muted small">Документов нет</div>';
+    return;
+  }
+
+  $('files').innerHTML = S.files.map(function (f) {
+    const owner = f.owner === 'прибор'
+      ? (deviceLabel(f.ownerId) || 'прибор') : '';
+    return '<div class="file">' +
+      '<div class="grow">' +
+        '<div class="name"><a href="' + esc(f.url) + '" target="_blank" rel="noopener">' + esc(f.name) + '</a></div>' +
+        '<div class="meta">' + esc(f.type) + (f.part ? ', часть ' + esc(f.part) : '') +
+          (owner ? ' · ' + esc(owner) : '') +
+          ' · ' + esc(f.sizeKb) + ' КБ · ' + esc(f.by || '') + ' ' + esc(f.when) + '</div>' +
+      '</div>' +
+      '<button class="btn btn-small" onclick="editFile(\'' + f.id + '\')">Тип</button>' +
+      (isAdmin() ? '<button class="btn btn-small btn-danger" onclick="deleteFile(\'' + f.id + '\')">Удалить</button>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function deviceLabel(id) {
+  const d = S.devices.filter(function (x) { return x['id'] === id; })[0];
+  if (!d) return '';
+  return (d['Позиция'] ? d['Позиция'] + ' ' : '') + d['Марка'];
+}
+
+/**
+ * Изображения сжимаются здесь, до отправки: фотография страницы
+ * паспорта с телефона весит несколько мегабайт, а после сжатия
+ * сотни килобайт и читается ровно так же. PDF и документы Word
+ * уходят как есть.
+ */
+function compress(file) {
+  return new Promise(function (resolve) {
+    if (file.type.indexOf('image/') !== 0) { resolve(file); return; }
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = function () {
+      const max = 1600;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(function (blob) { resolve(blob || file); }, 'image/jpeg', 0.7);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
+function toBase64(blob) {
+  return new Promise(function (resolve, reject) {
+    const r = new FileReader();
+    r.onload = function () { resolve(String(r.result).split(',')[1]); };
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function uploadFiles() {
+  const input = $('fileInput');
+  const files = Array.prototype.slice.call(input.files || []);
+  if (!files.length) return;
+
+  const docType = $('docType').value;
+  const part = $('docPart').value.trim();
+  const limit = (S.init.maxFileMb || 8) * 1024 * 1024;
+
+  for (let i = 0; i < files.length; i++) {
+    const original = files[i];
+    const blob = await compress(original);
+
+    if (blob.size > limit) {
+      toast(original.name + ': больше ' + S.init.maxFileMb +
+            ' МБ. Положите в папку узла на Диске и нажмите «Подхватить из папки».', true);
+      continue;
+    }
+
+    const data = await toBase64(blob);
+    const r = await call({
+      action: 'upload',
+      ownerType: 'узел',
+      ownerId: S.node['id'],
+      docType: docType,
+      part: part,
+      name: original.name,
+      mime: blob.type || original.type,
+      data: data
+    });
+
+    if (!r.success) { toast(original.name + ': ' + r.error, true); continue; }
+    toast('Загружено: ' + r.name);
+  }
+
+  input.value = '';
+  $('docPart').value = '';
+  const fresh = await call({ action: 'node', id: S.node['id'] });
+  if (fresh.success) { S.files = fresh.files; renderFiles(); }
+}
+
+async function syncFolder() {
+  const r = await call({ action: 'syncFolder', nodeId: S.node['id'] });
+  if (!r.success) { toast(r.error, true); return; }
+
+  const parts = [];
+  if (r.added.length) parts.push('подхвачено файлов: ' + r.added.length);
+  else parts.push('новых файлов в папке нет');
+  if (r.missing.length) parts.push('пропало с Диска: ' + r.missing.length);
+  if (r.limited) parts.push('разобрано ' + r.scanned + ', повторите для остальных');
+
+  toast(parts.join(', '));
+
+  const fresh = await call({ action: 'node', id: S.node['id'] });
+  if (fresh.success) {
+    S.files = fresh.files;
+    S.folderUrl = fresh.folderUrl;
+    renderFiles();
+    $('folderLink').style.display = S.folderUrl ? '' : 'none';
+    $('folderLink').href = S.folderUrl || '#';
+  }
+}
+
+async function editFile(fileId) {
+  const f = S.files.filter(function (x) { return x.id === fileId; })[0];
+  if (!f) return;
+
+  const list = S.init.docTypes.map(function (t, i) { return (i + 1) + ' ' + t; }).join('\n');
+  const answer = await ask({
+    title: 'Тип документа',
+    text: 'Введите номер типа и, если нужно, номер части через пробел.\n\n' + list,
+    input: true, placeholder: 'например: 3 2', yes: 'Применить'
+  });
+  if (!answer) return;
+
+  const bits = answer.split(/\s+/);
+  const type = S.init.docTypes[parseInt(bits[0], 10) - 1];
+  if (!type) { toast('Нет такого типа', true); return; }
+
+  const r = await call({
+    action: 'updateFile', fileId: fileId, docType: type, part: bits[1] || ''
+  });
+  if (!r.success) { toast(r.error, true); return; }
+
+  toast('Тип изменён');
+  const fresh = await call({ action: 'node', id: S.node['id'] });
+  if (fresh.success) { S.files = fresh.files; renderFiles(); }
+}
+
+async function deleteFile(fileId) {
+  const yes = await ask({
+    title: 'Удалить документ',
+    text: 'Файл уйдёт в корзину Диска, строка исчезнет из карточки.', yes: 'Удалить'
+  });
+  if (!yes) return;
+
+  const r = await call({ action: 'deleteFile', fileId: fileId });
+  if (!r.success) { toast(r.error, true); return; }
+
+  toast('Документ удалён');
+  const fresh = await call({ action: 'node', id: S.node['id'] });
+  if (fresh.success) { S.files = fresh.files; renderFiles(); }
+}
+
+
+/* ---------------- справочники ---------------- */
+
+const DICT_DEF = {
+  objects:     { title: 'Объекты', key: 'Наименование',
+                 fields: ['Наименование', 'Адрес', 'Подразделение'] },
+  departments: { title: 'Подразделения', key: 'Наименование', fields: ['Наименование'] },
+  models:      { title: 'Модели приборов', key: 'Марка',
+                 fields: ['Тип прибора', 'Марка', 'Номер в госреестре СИ', 'Межповерочный интервал, мес'] },
+  people:      { title: 'Люди', key: 'ФИО полное',
+                 fields: ['ФИО полное', 'Должность', 'Роли'] }
+};
+
+function openDict() {
+  $('dictErr').style.display = 'none';
+  renderDict();
+  open_('dictModal');
+}
+
+function renderDict() {
+  const name = $('dictPick').value;
+  const def = DICT_DEF[name];
+
+  $('dictAdd').innerHTML =
+    '<div class="fields" style="margin-bottom:14px">' +
+      def.fields.map(function (f) {
+        return '<div class="field"><label>' + esc(f) + '</label>' +
+               '<input type="text" id="dict_' + esc(f.replace(/[^\wа-яА-ЯёЁ]/g, '_')) + '"></div>';
+      }).join('') +
+    '</div><button class="btn btn-main" onclick="dictAdd()">Добавить</button>';
+
+  let rows = [];
+  if (name === 'objects') rows = S.init.objects.map(function (o) {
+    return { key: o.name, text: o.name, sub: [o.address, o.dept].filter(Boolean).join(' · ') };
+  });
+  if (name === 'departments') rows = S.init.departments.map(function (d) {
+    return { key: d, text: d, sub: '' };
+  });
+  if (name === 'models') rows = S.init.models.map(function (m) {
+    return { key: m.brand, text: m.brand,
+             sub: [m.type, m.mpi ? m.mpi + ' мес' : 'интервал не задан', m.note].filter(Boolean).join(' · ') };
+  });
+  if (name === 'people') rows = S.init.people.map(function (p) {
+    return { key: p.full, text: p.full, sub: [p.post, p.roles.join(', ')].filter(Boolean).join(' · ') };
+  });
+
+  $('dictList').innerHTML = rows.length
+    ? rows.map(function (r) {
+        return '<div class="dict-row">' +
+          '<div class="grow"><div>' + esc(r.text) + '</div>' +
+          (r.sub ? '<div class="meta small muted">' + esc(r.sub) + '</div>' : '') + '</div>' +
+          '<button class="btn btn-small" onclick="dictHide(\'' + esc(r.key).replace(/'/g, "\\'") + '\')">Скрыть</button>' +
+        '</div>';
+      }).join('')
+    : '<div class="empty">Справочник пуст</div>';
+}
+
+function dictValues() {
+  const def = DICT_DEF[$('dictPick').value];
+  const out = {};
+  def.fields.forEach(function (f) {
+    const el = $('dict_' + f.replace(/[^\wа-яА-ЯёЁ]/g, '_'));
+    if (el) out[f] = el.value.trim();
+  });
+  return out;
+}
+
+async function dictAdd() {
+  const name = $('dictPick').value;
+  const row = dictValues();
+
+  const r = await call({ action: 'dictAdd', dict: name, row: row });
+  if (!r.success) {
+    $('dictErr').textContent = r.error;
+    $('dictErr').style.display = '';
+    return;
+  }
+
+  $('dictErr').style.display = 'none';
+  toast('Добавлено: ' + r.added);
+  await refreshModels();
+  renderDict();
+  applyDictToFilters();
+}
+
+async function dictHide(key) {
+  const yes = await ask({
+    title: 'Скрыть строку',
+    text: '«' + key + '» перестанет предлагаться в новых карточках. ' +
+          'Заведённые карточки не изменятся.', yes: 'Скрыть'
+  });
+  if (!yes) return;
+
+  const r = await call({ action: 'dictToggle', dict: $('dictPick').value, key: key, active: false });
+  if (!r.success) { toast(r.error, true); return; }
+
+  toast('Скрыто');
+  await refreshModels();
+  renderDict();
+  applyDictToFilters();
+}
+
+/** После правки справочника обновляем выпадающие списки фильтров. */
+function applyDictToFilters() {
+  const object = $('fObject').value;
+  fillSelect($('fObject'), S.init.objects.map(function (o) { return o.name; }), object, 'Все объекты');
+
+  const user = $('user').value;
+  fillSelect($('user'), S.init.people.map(function (p) { return p.full; }), user, 'Выберите себя');
+}
+
+
+/* ---------------- печать ---------------- */
+
+function printArea(html) {
+  $('printArea').innerHTML = html;
+  window.print();
+  setTimeout(function () { $('printArea').innerHTML = ''; }, 1000);
+}
+
+function printNode() {
+  if (typeof renderNodeDoc !== 'function') {
+    toast('Печатные формы не подключены: нет файла templates.js', true);
+    return;
+  }
+  printArea(renderNodeDoc(S.node, S.devices, S.files, S.init.org));
+}
+
+function printRegistry() {
+  if (typeof renderRegistryDoc !== 'function') {
+    toast('Печатные формы не подключены: нет файла templates.js', true);
+    return;
+  }
+  printArea(renderRegistryDoc(S.nodes, S.init.org, {
+    object: $('fObject').value, resource: $('fResource').value, status: $('fStatus').value
+  }));
+}
+
+
+/* ---------------- запуск ---------------- */
+
+(function start() {
+  const saved = sessionStorage.getItem('auth');
+  $('login').classList.add('on');
+
+  if (saved) {
+    S.pass = saved;
+    call({ action: 'init' }).then(function (r) {
+      if (r && r.success) applyInit(r);
+      else sessionStorage.removeItem('auth');
+    });
+  }
+
+  $('pass').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') login();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    ['askModal', 'checkModal', 'deviceModal', 'dueModal', 'dictModal', 'nodeModal']
+      .some(function (id) {
+        if ($(id).classList.contains('open')) { close_(id); return true; }
+        return false;
+      });
+  });
+})();
+</script>
+
+</body>
+</html>
