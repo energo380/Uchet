@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Узлы учёта</title>
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 
@@ -58,7 +59,7 @@
     </div>
 
     <div class="panel-marks">
-      <span id="sn">S/N 0425-МС · сб. 5</span>
+      <span id="sn">S/N 0425-МС · сб. 7</span>
       <span>Кл. точности 0,5</span>
     </div>
   </div>
@@ -71,9 +72,12 @@
 
   <header>
     <div class="head-row">
-      <div class="grow">
-        <h1>Узлы учёта<span class="role-tag" id="roleTag" style="display:none">администратор</span></h1>
-        <div class="org" id="org"></div>
+      <div class="brand grow">
+        <img class="brand-logo" src="logo2.png" alt="Новосибирская птицефабрика">
+        <div style="min-width:0">
+          <h1>Узлы учёта<span class="role-tag" id="roleTag" style="display:none">администратор</span></h1>
+          <div class="org" id="org"></div>
+        </div>
       </div>
       <div>
         <label for="user">Кто работает</label>
@@ -608,13 +612,13 @@ function rowHtml(n) {
   } else if (n.overdue) {
     side = '<div class="top danger">' +
              (n.overdue > 1 ? n.overdue + ' поверки просрочены' : 'поверка просрочена') +
-           '</div><div class="bot">с ' + esc(n.nearest) + '</div>';
+           '</div><div class="bot">с <span class="mono">' + esc(n.nearest) + '</span></div>';
   } else if (n.nearest) {
     const d = daysLeft(n.nearest);
     const warn = (d !== null && d <= (S.init.urgentDays || 30));
     side = '<div class="top' + (warn ? ' warn' : '') + '">поверка через ' + d + ' ' +
              plural(d, 'день', 'дня', 'дней') + '</div>' +
-           '<div class="bot">до ' + esc(n.nearest) + '</div>';
+           '<div class="bot">до <span class="mono">' + esc(n.nearest) + '</span></div>';
   } else if (n.devices) {
     side = '<div class="bot">поверки не внесены</div>';
   } else {
@@ -645,7 +649,8 @@ async function loadDue() {
   const g = dueGroups();
   $('chips').innerHTML = g.map(function (x, i) {
     return '<span class="chip ' + x.cls + (x.items.length ? '' : ' zero') +
-           '" onclick="showDue(' + i + ')">' + esc(x.title) + ' · ' + x.items.length + '</span>';
+           '" onclick="showDue(' + i + ')"><span class="dot"></span>' +
+           esc(x.title) + ' · ' + x.items.length + '</span>';
   }).join('');
 }
 
@@ -682,7 +687,7 @@ function showDue(i) {
           '</div>' +
           '<div class="row-side"><div class="top' + (left < 0 ? ' danger' : '') + '">' +
             (left < 0 ? 'просрочено' : 'через ' + left + ' ' + plural(left, 'день', 'дня', 'дней')) +
-          '</div><div class="bot">' + esc(date) + '</div></div>' +
+          '</div><div class="bot mono">' + esc(date) + '</div></div>' +
         '</div>';
       }).join('')
     : '<div class="empty">Пусто. Это хорошая новость.</div>';
@@ -915,17 +920,17 @@ function renderDevices() {
     else if (left !== null && left !== undefined) {
       const cls = left < 0 ? 'danger' : (left <= (S.init.urgentDays || 30) ? 'warn' : 'ok');
       badge = '<span class="badge ' + cls + '">' +
-        (left < 0 ? 'просрочено с ' + esc(d['Дата следующей поверки'])
-                  : 'до ' + esc(d['Дата следующей поверки'])) + '</span>';
+        (left < 0 ? 'просрочено с ' : 'до ') +
+        '<span class="mono">' + esc(d['Дата следующей поверки']) + '</span></span>';
     }
 
     const checks = (d.checks || []).map(function (c) {
       return '<div class="check-row">' +
-        '<span>' + esc(c['Дата поверки']) + '</span>' +
+        '<span class="mono">' + esc(c['Дата поверки']) + '</span>' +
         '<span class="grow">' + esc(c['Результат']) +
           (c['Номер свидетельства'] ? ' · ' + esc(c['Номер свидетельства']) : '') +
           (c['Поверитель'] ? ' · ' + esc(c['Поверитель']) : '') + '</span>' +
-        '<span>до ' + esc(c['Дата следующей поверки'] || '—') + '</span>' +
+        '<span>до <span class="mono">' + esc(c['Дата следующей поверки'] || '—') + '</span></span>' +
         (isAdmin() ? '<button class="btn btn-small" onclick="deleteCheck(\'' + c['id'] + '\')">×</button>' : '') +
       '</div>';
     }).join('');
@@ -938,7 +943,7 @@ function renderDevices() {
             (d['Модификация'] ? ' ' + esc(d['Модификация']) : '') +
           '</div>' +
           '<div class="device-sub">' + esc(d['Тип прибора']) +
-            (d['Заводской номер'] ? ' · зав. № ' + esc(d['Заводской номер']) : '') +
+            (d['Заводской номер'] ? ' · зав. № <span class="mono">' + esc(d['Заводской номер']) + '</span>' : '') +
             (d['Год выпуска'] ? ' · ' + esc(d['Год выпуска']) + ' г.' : '') +
             (d['Диаметр Ду, мм'] ? ' · Ду ' + esc(d['Диаметр Ду, мм']) : '') +
           '</div>' +
