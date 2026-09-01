@@ -28,10 +28,34 @@
 const TPL_VERSION = 'v1';
 
 
+/**
+ * ПОЛЯ СТРАНИЦЫ И КОЛОНТИТУЛЫ БРАУЗЕРА.
+ *
+ * Адрес сайта, дата и заголовок внизу и вверху листа печатаются
+ * не документом, а самим браузером. Убрать их из кода напрямую
+ * нельзя, это его настройка. Но есть особенность: когда поля
+ * страницы равны нулю, браузерам на движке Chromium (Chrome,
+ * Edge, Яндекс) печатать колонтитулы негде, и они их опускают.
+ *
+ * Поэтому поля задаёт сам документ, через отступ, а странице
+ * оставлен ноль. Печать выглядит так же, но без адреса внизу.
+ *
+ * Firefox поступает иначе и колонтитулы всё равно нарисует.
+ * Там их выключают в окне печати: «Поля и колонтитулы» ->
+ * во всех четырёх списках выбрать «Пусто».
+ *
+ * Если захотите вернуть обычные поля страницы, поменяйте
+ * значения местами: PAGE_MARGIN = '14mm 12mm', DOC_PADDING = '0'.
+ */
+const PAGE_MARGIN = '0';
+const DOC_PADDING = '14mm 12mm';
+
+
 /** Общие стили печати. size задаётся отдельно каждому документу. */
 function docCss(orientation) {
   return '<style>' +
-    '@page { size: A4 ' + orientation + '; margin: 14mm 12mm; }' +
+    '@page { size: A4 ' + orientation + '; margin: ' + PAGE_MARGIN + '; }' +
+    '.doc { padding: ' + DOC_PADDING + '; box-sizing: border-box; }' +
     '.doc { font: 11pt/1.35 "Times New Roman", Georgia, serif; color: #000; }' +
     '.doc h1 { font-size: 14pt; text-align: center; margin: 0 0 2mm; text-transform: uppercase; }' +
     '.doc h2 { font-size: 11pt; margin: 6mm 0 2mm; text-transform: uppercase; letter-spacing: .04em; }' +
