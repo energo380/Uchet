@@ -6,6 +6,72 @@
 <title>Узлы учёта</title>
 <link rel="icon" href="logo.png">
 <link rel="stylesheet" href="styles.css?v=7">
+
+<style id="svc-key-style">
+/* ===== Клавиша «Сервисы» — возврат в общее меню energo380.github.io/menu ===== */
+.svc-key {
+  --svc-c1: #4f9bf5; --svc-c2: #17509f; --svc-edge: #0d2f60; --svc-led: #7cc0ff;
+  --svc-h: 50px;
+  position: relative; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  height: var(--svc-h); padding: 0 22px 0 18px; border-radius: 12px;
+  font-family: inherit; font-size: 15px; font-weight: 700; line-height: 1;
+  letter-spacing: .08em; text-transform: uppercase; text-decoration: none; white-space: nowrap;
+  color: rgba(255,255,255,.96);
+  text-shadow: 0 -1px 0 rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.25);
+  background:
+    radial-gradient(120% 90% at 25% -20%, rgba(255,255,255,.3), transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f' x='0' y='0' width='160' height='160' filterUnits='userSpaceOnUse'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeDiffuseLighting surfaceScale='1.6' lighting-color='white'%3E%3CfeDistantLight azimuth='235' elevation='55'/%3E%3C/feDiffuseLighting%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='.6' intercept='-.07'/%3E%3CfeFuncG type='linear' slope='.6' intercept='-.07'/%3E%3CfeFuncB type='linear' slope='.6' intercept='-.07'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url%28%23f%29'/%3E%3C/svg%3E") 0 0 / 160px 160px,
+    linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 45%, rgba(0,0,0,.16)),
+    linear-gradient(135deg, var(--svc-c1), var(--svc-c2));
+  background-blend-mode: normal, overlay, normal, normal;
+  border: 1px solid rgba(0,0,0,.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    inset 0 -2px 0 rgba(0,0,0,.18),
+    0 4px 0 var(--svc-edge),
+    0 6px 10px rgba(0,0,0,.35),
+    0 0 16px -3px var(--svc-led);
+  transform: translateY(-2px);
+  transition: transform .1s ease, box-shadow .2s ease, filter .2s ease;
+  -webkit-tap-highlight-color: transparent; cursor: pointer;
+}
+.svc-key:hover, .svc-key:focus-visible {
+  filter: brightness(1.06) saturate(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    inset 0 -2px 0 rgba(0,0,0,.18),
+    0 4px 0 var(--svc-edge),
+    0 6px 12px rgba(0,0,0,.35),
+    0 0 26px 0 var(--svc-led);
+  text-shadow: 0 -1px 0 rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.25), 0 0 12px var(--svc-led);
+  color: #fff; text-decoration: none; outline: none;
+}
+.svc-key:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    0 0 0 var(--svc-edge),
+    0 1px 3px rgba(0,0,0,.4),
+    0 0 18px -2px var(--svc-led);
+}
+.svc-key .svc-ico {
+  width: 18px; height: 18px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round;
+  filter: drop-shadow(0 -1px 0 rgba(0,0,0,.4)) drop-shadow(0 1px 0 rgba(255,255,255,.2));
+}
+.svc-key .svc-led {
+  width: 7px; height: 7px; border-radius: 50%; margin-left: 4px; flex: none;
+  background: radial-gradient(circle at 40% 35%, #fff 0 18%, var(--svc-led) 45%);
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,.28), 0 0 8px var(--svc-led);
+}
+.svc-key--sm { --svc-h: 38px; font-size: 13px; padding: 0 16px 0 13px; border-radius: 10px; gap: 8px; }
+.svc-key--sm .svc-ico { width: 16px; height: 16px; }
+.svc-key--sm .svc-led { display: none; }
+#login .svc-key { margin-top: 26px; }
+.head-row .svc-key--sm { --svc-h: 34px; }
+@media (prefers-reduced-motion: reduce) { .svc-key { transition: none; } }
+</style>
 </head>
 <body>
 
@@ -65,6 +131,7 @@
   </div>
 
   <div class="err login-err" id="loginErr"></div>
+  <a class="svc-key" href="https://energo380.github.io/menu/" title="Вернуться в меню рабочих сервисов"><svg class="svc-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg><span>Сервисы</span><i class="svc-led"></i></a>
 </section>
 
 <!-- ========================= ПРИЛОЖЕНИЕ ========================= -->
@@ -84,6 +151,7 @@
         <select id="user" onchange="rememberUser()"></select>
       </div>
       <button class="btn btn-small" id="dictBtn" style="display:none" onclick="openDict()">Справочники</button>
+      <a class="svc-key svc-key--sm" href="https://energo380.github.io/menu/" title="Вернуться в меню рабочих сервисов"><svg class="svc-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg><span>Сервисы</span></a>
       <button class="btn btn-small" onclick="logout()">Выйти</button>
     </div>
   </header>
