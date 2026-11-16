@@ -283,6 +283,43 @@
 
 const API = (typeof API_URL !== 'undefined') ? String(API_URL).trim() : '';
 
+/* Имена в памяти браузера. Все сервисы живут на одном адресе
+   energo380.github.io, и память у них общая. Под голым именем «queue»
+   очередь «Учёта» смешивалась с очередью «Стажировок»: здесь всплывали
+   чужие карточки, и из-за них браузер спрашивал «Закрыть сайт?».
+   Поэтому у каждого имени теперь приставка сервиса. */
+const K = {
+  queue: 'uchet-queue',
+  user:  'uchet-user',
+  auth:  'uchet-auth'
+};
+
+/** Разовый перенос со старых общих имён. Чужое не трогает. */
+function migrateStorage_() {
+  try {
+    // Из общей очереди забираем только свои записи: у них есть state
+    // и нет kind. Записи «Стажировок» остаются, те заберут их сами.
+    const old = JSON.parse(localStorage.getItem('queue') || '[]');
+    if (Array.isArray(old) && old.length) {
+      const isMine = function (i) { return i && typeof i.state === 'string' && !i.kind; };
+      const mine = old.filter(isMine);
+      const rest = old.filter(function (i) { return !isMine(i); });
+      if (mine.length) {
+        const cur = JSON.parse(localStorage.getItem(K.queue) || '[]');
+        const have = {};
+        cur.forEach(function (i) { have[i.id] = true; });
+        mine.forEach(function (i) { if (!have[i.id]) cur.push(i); });
+        localStorage.setItem(K.queue, JSON.stringify(cur));
+        if (rest.length) localStorage.setItem('queue', JSON.stringify(rest));
+        else localStorage.removeItem('queue');
+      }
+    }
+    // «Работает: …» было общим со «Стажировками» - копируем, старое не удаляем
+    const user = localStorage.getItem('user');
+    if (user && localStorage.getItem(K.user) === null) localStorage.setItem(K.user, user);
+  } catch (e) {}
+}
+
 const S = {
   pass: '',
   role: 'user',
@@ -503,7 +540,7 @@ async function login() {
   }
 
   led('ok');
-  sessionStorage.setItem('auth', pass);
+  sessionStorage.setItem(K.auth, pass);
   applyInit(r);
   // Записи, оставшиеся в очереди с прошлого раза, досылаем сразу.
   // Раньше это делал только автовход по сохранённой сессии.
@@ -536,7 +573,7 @@ function applyInit(r) {
   fillSelect($('docType'), r.docTypes, 'паспорт');
 
   const names = r.people.map(function (p) { return p.full; });
-  fillSelect($('user'), names, localStorage.getItem('user') || '', 'Выберите себя');
+  fillSelect($('user'), names, localStorage.getItem(K.user) || '', 'Выберите себя');
   S.user = $('user').value;
 
   $('uploadHint').textContent =
@@ -553,11 +590,11 @@ function applyInit(r) {
 
 function rememberUser() {
   S.user = $('user').value;
-  localStorage.setItem('user', S.user);
+  localStorage.setItem(K.user, S.user);
 }
 
 function logout() {
-  sessionStorage.removeItem('auth');
+  sessionStorage.removeItem(K.auth);
   leaving = true;
   location.reload();
 }
@@ -1512,13 +1549,13 @@ function applyDictToFilters() {
    не отправить без связи.
    ============================================================ */
 
-const Q_KEY = 'queue';
 const Q_DELAYS = [20000, 60000, 150000];
 let queue = [];
 let qTimer = null;
 
 function queueLoad() {
-  try { queue = JSON.parse(localStorage.getItem(Q_KEY) || '[]'); }
+  migrateStorage_();
+  try { queue = JSON.parse(localStorage.getItem(K.queue) || '[]'); }
   catch (e) { queue = []; }
 
   // Застрявшие на отправке возвращаем в очередь: повтор безопасен
@@ -1527,7 +1564,7 @@ function queueLoad() {
 }
 
 function queueSave() {
-  try { localStorage.setItem(Q_KEY, JSON.stringify(queue)); } catch (e) {}
+  try { localStorage.setItem(K.queue, JSON.stringify(queue)); } catch (e) {}
   renderQueueBtn();
   if ($('queueModal').classList.contains('open')) renderQueue();
 }
@@ -1678,7 +1715,7 @@ function printRegistry() {
 /* ---------------- запуск ---------------- */
 
 (function start() {
-  const saved = sessionStorage.getItem('auth');
+  const saved = sessionStorage.getItem(K.auth);
   $('login').classList.add('on');
   queueLoad();
 
@@ -1686,7 +1723,7 @@ function printRegistry() {
     S.pass = saved;
     call({ action: 'init' }).then(function (r) {
       if (r && r.success) { applyInit(r); queueProcess(); }
-      else sessionStorage.removeItem('auth');
+      else sessionStorage.removeItem(K.auth);
     });
   }
 
