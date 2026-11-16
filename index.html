@@ -69,7 +69,7 @@
   </div>
 
   <div class="err login-err" id="loginErr"></div>
-  <button type="button" class="btn svc-login" onclick="location.href='https://energo380.github.io/menu/'" title="Вернуться в меню рабочих сервисов">Сервисы</button>
+  <button type="button" class="btn svc-login" onclick="goServices()" title="Вернуться в меню рабочих сервисов">Сервисы</button>
 </section>
 
 <!-- ========================= ПРИЛОЖЕНИЕ ========================= -->
@@ -89,7 +89,7 @@
         <select id="user" onchange="rememberUser()"></select>
       </div>
       <button class="btn btn-small" id="dictBtn" style="display:none" onclick="openDict()">Справочники</button>
-      <button type="button" class="btn btn-small" onclick="location.href='https://energo380.github.io/menu/'" title="Вернуться в меню рабочих сервисов">Сервисы</button>
+      <button type="button" class="btn btn-small" onclick="goServices()" title="Вернуться в меню рабочих сервисов">Сервисы</button>
       <button class="btn btn-small" onclick="logout()">Выйти</button>
     </div>
   </header>
@@ -505,6 +505,9 @@ async function login() {
   led('ok');
   sessionStorage.setItem('auth', pass);
   applyInit(r);
+  // Записи, оставшиеся в очереди с прошлого раза, досылаем сразу.
+  // Раньше это делал только автовход по сохранённой сессии.
+  queueProcess();
 }
 
 function loginFail(text) {
@@ -555,7 +558,18 @@ function rememberUser() {
 
 function logout() {
   sessionStorage.removeItem('auth');
+  leaving = true;
   location.reload();
+}
+
+/* Уход со страницы своей кнопкой. Неотправленные записи при этом
+   не теряются: очередь лежит в памяти браузера и уйдёт при следующем
+   входе. Поэтому браузерное «Закрыть сайт?» здесь не показываем -
+   переход такой же, как на остальных страницах. */
+let leaving = false;
+function goServices() {
+  leaving = true;
+  location.href = 'https://energo380.github.io/menu/';
 }
 
 function fillSelect(el, options, value, emptyLabel) {
@@ -1684,9 +1698,11 @@ function printRegistry() {
   window.addEventListener('online', queueRetry);
 
   // Закрывать вкладку с неотправленными записями браузер
-  // разрешит только после подтверждения
+  // разрешит только после подтверждения. Не спрашиваем, когда
+  // человек уходит кнопкой «Сервисы» или «Выйти», и на экране входа:
+  // без пароля очередь всё равно не отправить, а записи сохранятся.
   window.addEventListener('beforeunload', function (e) {
-    if (!queue.length) return;
+    if (leaving || !S.pass || !queue.length) return;
     e.preventDefault();
     e.returnValue = '';
   });
